@@ -1,4 +1,5 @@
 from __future__ import division, absolute_import
+import sys
 import functools
 
 
@@ -89,17 +90,19 @@ class ChainLink(object):
         self._parents = []
         self._children = []
 
-    def bind_parents(self, *parents, _rebound=False):
+    def bind_parents(self, *parents, **kwargs):
+        _rebound = kwargs.pop('_rebound', False)
         self._parents.extend(parents)
         if not _rebound:
             for parent in parents:
                 parent.bind_parent(self, _rebound=True)
 
-    def bind_children(self, *children, _rebound=False):
-        self._parents.extend(children)
+    def bind_children(self, *children, **kwargs):
+        _rebound = kwargs.pop('_rebound', False)
+        self._children.extend(children)
         if not _rebound:
             for child in children:
-                child.bind_parent(self, _rebound=True)
+                child.bind_parents(self, _rebound=True)
 
     def __rshift__(self, children):
         if isinstance(children, tuple):
@@ -115,16 +118,29 @@ class ChainLink(object):
             self.bind_children(parents)
         return parents
 
+    def __iter__(self):
+        return self
+
     def __next__(self):
+        return self._next_of_parents()
+
+    def _next_of_parents(self):
+        if len(self._parents) == 1:
+            return next(self._parents[0])
         raise StopIteration('Not Iterable')
+
+    if sys.version_info < (3,):
+        def next(self):
+            return self.__next__()
 
     def send(self, value=None):
         """Send a value to this element"""
-        self._send_to_children(value)
+        all_retvals = self._send_to_children(value)
+        if len(self._children) == 1:
+            return all_retvals[0]
 
     def _send_to_children(self, value=None):
-        for child in self._children:
-            child.send(value)
+        return [child.send(value) for child in self._children]
 
     def throw(self, type, value=None, traceback=None):
         for child in self._children:
@@ -169,7 +185,11 @@ class WrapperMixin(object):
         Convert any callable constructor to a chain link constructor
         """
         def linker(*args, **kwargs):
-            """Creates a new instance of a chain link"""
+            """
+            Creates a new instance of a chain link
+
+            :rtype: ChainLink
+            """
             return cls(target(*args, **kwargs))
         functools.update_wrapper(linker, target)
         return linker

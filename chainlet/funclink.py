@@ -69,7 +69,7 @@ class FunctionLink(chainlink.WrapperMixin, chainlink.ChainLink):
     def send(self, value=None):
         """Send a value to this element"""
         result = self.__wrapped__(value=value, *self._wrapped_args, **self._wrapped_kwargs)
-        self._send_to_children(result)
+        return super(FunctionLink, self).send(result)
 
     @classmethod
     def linklet(cls, target):

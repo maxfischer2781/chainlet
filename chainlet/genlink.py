@@ -73,8 +73,7 @@ class GeneratorLink(chainlink.WrapperMixin, chainlink.ChainLink):
     def send(self, value=None):
         """Send a value to this element"""
         result = self.__wrapped__.send(value)
-        for child in self._children:
-            child.send(result)
+        return super(GeneratorLink, self).send(result)
 
     def throw(self, type, value=None, traceback=None):
         super(GeneratorLink, self).throw(type, value, traceback)
