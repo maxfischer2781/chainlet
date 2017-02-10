@@ -30,13 +30,13 @@ class ChainDriver(chainlink.ChainLink):
             try:
                 if self._run_thread is not None:
                     raise RuntimeError("ChainDriver already started")
-                self._run_thread = threading.Thread(target=self._run_thread)
+                self._run_thread = threading.Thread(target=self._run_in_thread)
                 self._run_thread.daemon = daemon
                 self._run_thread.start()
             finally:
                 self._run_lock.release()
 
-    def _run_thread(self):
+    def _run_in_thread(self):
         try:
             self.run()
         finally:
