@@ -15,7 +15,7 @@ around it:
     from mylib import producer, consumer
 
     def windowed_average(size=8):
-        buffer = collections.deque(maxlen=size)
+        buffer = collections.deque([(yield)], maxlen=size)
         while True:
             new_value = yield(sum(buffer)/len(buffer))
             buffer.append(new_value)
