@@ -95,7 +95,7 @@ class ChainLink(object):
         self._parents.extend(parents)
         if not _rebound:
             for parent in parents:
-                parent.bind_parent(self, _rebound=True)
+                parent.bind_children(self, _rebound=True)
 
     def bind_children(self, *children, **kwargs):
         _rebound = kwargs.pop('_rebound', False)
@@ -113,9 +113,9 @@ class ChainLink(object):
 
     def __lshift__(self, parents):
         if isinstance(parents, tuple):
-            self.bind_children(*parents)
+            self.bind_parents(*parents)
         else:
-            self.bind_children(parents)
+            self.bind_parents(parents)
         return parents
 
     def __iter__(self):
