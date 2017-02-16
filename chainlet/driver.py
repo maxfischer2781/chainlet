@@ -91,7 +91,7 @@ class ThreadedChainDriver(ChainDriver):
     def run(self):
         with self._run_lock:
             runner_threads = [
-                threading.Thread(target=self._parent_chain_driver, args=parent) for parent in self._parents
+                threading.Thread(target=self._parent_chain_driver, args=(parent,)) for parent in self._parents
             ]
             for runner_thread in runner_threads:
                 runner_thread.daemon = self.daemon
