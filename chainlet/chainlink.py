@@ -7,7 +7,7 @@ class ChainLink(object):
     """
     BaseClass for elements in a chain
 
-    A chain is created by binding :py:class:`ChainLink`s together. This is
+    A chain is created by binding :py:class:`ChainLink`\ s together. This is
     a directional process: a binding is always made between parent and child.
     Each child can be the parent to another child, and vice versa.
 
@@ -42,11 +42,6 @@ class ChainLink(object):
 
        Bind ``parent_a``, ``parent_b``, etc. as individual parents of ``child``.
 
-    :note: When binding multiple elements via ``>>`` and ``<<``, elements *must*
-           be in a :py:class:`tuple`. Contrast ``parent >> child_a, child_b``
-           which only binds ``child_a``, and ``parent >> [child_a, child_b]``
-           which attempts and fails to bind a list *containing* children.
-
     Aside from binding, every :py:class:`ChainLink` should implement the
     `Generator-Iterator Methods`_ interface as applicable:
 
@@ -76,8 +71,9 @@ class ChainLink(object):
     importantly, the type, format and nesting of return values is up to
     implementations.
 
-    In specific, :py:meth:`__next__` raises :py:exc:`StopIteration`
-    unconditionally. In contrast, :py:meth:`send`, :py:meth:`throw` and
+    In specific, :py:meth:`__next__` simply calls ``next`` on the parent, or raise
+    :py:exc:`StopIteration` if there is not exactly one parent.
+    In contrast, :py:meth:`send`, :py:meth:`throw` and
     :py:meth:`close` always return :py:const:`None`; additionally, these
     methods pass on any input to any bound children.
 
@@ -86,75 +82,144 @@ class ChainLink(object):
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
-    def __init__(self):
-        self._parents = []
-        self._children = []
-
-    def bind_parents(self, *parents, **kwargs):
-        _rebound = kwargs.pop('_rebound', False)
-        self._parents.extend(parents)
-        if not _rebound:
-            for parent in parents:
-                parent.bind_children(self, _rebound=True)
-
-    def bind_children(self, *children, **kwargs):
-        _rebound = kwargs.pop('_rebound', False)
-        self._children.extend(children)
-        if not _rebound:
-            for child in children:
-                child.bind_parents(self, _rebound=True)
+    chain_linker = None
 
     def __rshift__(self, children):
-        if isinstance(children, tuple):
-            self.bind_children(*children)
-        else:
-            self.bind_children(children)
-        return children
+        # self >> children
+        linker = self.chain_linker if self.chain_linker is not None else default_linker
+        return linker(self, children)
+
+    def __rrshift__(self, children):
+        # parent >> self
+        return self << children
 
     def __lshift__(self, parents):
-        if isinstance(parents, tuple):
-            self.bind_parents(*parents)
-        else:
-            self.bind_parents(parents)
-        return parents
+        # self << parent
+        linker = self.chain_linker if self.chain_linker is not None else default_linker
+        return linker(parents, self)
+
+    def __rlshift__(self, parent):
+        # children << self
+        return self >> parent
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        return self._next_of_parents()
-
-    def _next_of_parents(self):
-        if len(self._parents) == 1:
-            return next(self._parents[0])
-        raise StopIteration('Not Iterable')
+        return self.send(None)
 
     if sys.version_info < (3,):
         def next(self):
             return self.__next__()
 
     def send(self, value=None):
-        """Send a value to this element"""
-        all_retvals = self._send_to_children(value)
-        if len(self._children) == 1:
-            return all_retvals[0]
-
-    def _send_to_children(self, value=None):
-        return [child.send(value) for child in self._children]
+        """Send a value to this element for processing"""
+        return value
 
     def throw(self, type, value=None, traceback=None):
-        for child in self._children:
-            child.throw(type, value, traceback)
+        """Throw an exception is this element"""
+        raise type(value, traceback)
 
     def close(self):
-        for child in self._children:
-            child.close()
-        self._children = type(self._children)()
+        """Close this element, freeing resources and blocking further interactions"""
+        pass
+
+
+class Chain(ChainLink):
+    def __init__(self, *elements):
+        self.elements = tuple(elements)
+
+    def __eq__(self, other):
+        if isinstance(other, Chain):
+            return self.elements == other.elements
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.elements)
+
+    def send(self, value=None):
+        raise NotImplementedError
+
+
+class LinearChain(Chain):
+    """
+    A linear sequence of chainlets, with each element preceding the next
+    """
+    def send(self, value=None):
+        for element in self.elements:
+            value = element.send(value)
+        return value
+
+    def __repr__(self):
+        return ' >> '.join(repr(elem) for elem in self.elements)
+
+
+class ParallelChain(Chain):
+    """
+    A parallel sequence of chainlets, with each element ranked the same
+    """
+    def send(self, value=None):
+        return [element.send(value) for element in self.elements]
+
+
+class MetaChain(ParallelChain):
+    """
+    A mixed sequence of linear and parallel chainlets
+    """
+    def send(self, value=None):
+        values = []
+        for element in self.elements:
+            if isinstance(element, ParallelChain):
+                # flatten output of parallel paths
+                values = [elem.send(value) for value in values for elem in element]
+            else:
+                values = [element.send(value) for value in values]
+        return value
+
+
+def parallel_chain_converter(element):
+    if isinstance(element, (tuple, list, set)):
+        return ParallelChain(*element)
+    raise TypeError
+
+
+class ChainLinker(object):
+    """
+    Helper for linking objects to chains
+    """
+    #: functions to convert elements; must return a ChainLink or raise TypeError
+    converters = [parallel_chain_converter]
+
+    def link(self, *elements):
+        _elements = []
+        for element in elements:
+            element = self.convert(element)
+            if isinstance(element, (LinearChain, MetaChain)):
+                _elements.extend(element.elements)
+            else:
+                _elements.append(element)
+        if any(isinstance(element, ParallelChain) for element in _elements):
+            return MetaChain(*_elements)
+        return LinearChain(*_elements)
+
+    def convert(self, element):
+        for converter in self.converters:
+            try:
+                return converter(element)
+            except TypeError:
+                continue
+        return element
+
+    def __call__(self, *elements):
+        return self.link(*elements)
+
+
+default_linker = ChainLinker()
 
 
 class WrapperMixin(object):
     """
-    Mixin for :py:class:`ChainLink`s that wrap other objects
+    Mixin for :py:class:`ChainLink`\ s that wrap other objects
 
     Apply as a mixin via multiple inheritance:
 
