@@ -1,0 +1,87 @@
+<h1>HTCondor at GridKa</h1>
+<p>GridKa has adopted the <a href="http://research.cs.wisc.edu/htcondor/">HTCondor</a> batch system for its processing farm.
+Mid of March 2017, HTCondor is the <strong>only</strong> batch system in use.</p>
+<p>This is a quick overview guide to submitting jobs to HTCondor at GridKa.
+Direct job submission is possible on the <code>gridka30.gridka.de</code> hosts.</p>
+<p><strong>NOTE</strong>: Jobs are restricted to a Memory/CPU ratio of 2000 MB/Core.</p>
+<h2>Direct Job Submission to HTCondor</h2>
+<p>To submit jobs to HTCondor, use the <a href="http://research.cs.wisc.edu/htcondor/manual/current/condor_submit.html">condor_submit</a> program.
+It expects a specification of your job in JDL format.
+This can be provided either as a file, via piping or manual input.</p>
+<h3>Invoking <code>condor_submit</code></h3>
+<p>To submit from a JDL file, specifiy its path as the last argument to <code>condor_submit</code>:</p>
+<pre><code>condor_submit myjob.jdl
+</code></pre>
+<p>To submit directly from the command line, you can pipe a JDL to <code>condor_submit</code>:</p>
+<pre><code>condor_submit &lt;&lt;&lt; 'executable=/my/application
+    arguments="one 2 three"
+    queue 1'
+</code></pre>
+<h3>Common JDL options</h3>
+<p>The following is an example for submitting jobs in a bulk, using common options.
+It uses the following dummy executable:</p>
+<pre><code>#!/bin/bash
+# file '~/htc-test.sh'
+echo Executing on $(hostname) at $(date)
+echo "Used config entry: $@" &gt; output.txt
+echo Pretending to fetch the wheather for $(head -$1 config.cfg | tail -1)...
+sleep 5
+</code></pre>
+<p>We also have a dummy input file, called <code>config.cfg</code>:</p>
+<pre><code>London
+Paris
+New York
+Tokyo
+</code></pre>
+<p>You always have to tell HTCondor the executable and how many jobs to <code>queue</code> for execution.
+In this example, 3 jobs are submitted at once - passing the job number <code>$(ProcId)</code> as <code>arguments</code> lets each know which one it is.
+In addition, input and output are transferred, and a specific number of resources is requested.</p>
+<pre><code>#   ~/htc-test.jdl  - example job description
+# what to execute in each job
+executable = htc-test.sh
+arguments = "$(ProcId)"
+# where files are moved to for each job, using job ID
+initialdir = run$(ProcId)
+#   Where to store stdout/stderr
+output = job.stdout
+error = job.stderr
+#   Transfer input/output files
+# Use this for configuration and results
+should_transfer_files = YES
+transfer_input_files = ~/config.cfg
+transfer_output_files = output.txt
+#   How many Cores are required (default is 1)
+request_cpus = 1
+#   Submit several jobs at once
+queue 3
+</code></pre>
+<p>You can now submit all three jobs at once using <code>condor_submit</code>.</p>
+<pre><code>$ condor_submit htc-test.jdl
+Submitting job(s)...
+3 job(s) submitted to cluster 40.
+</code></pre>
+<p>The cluster number returned allows to manage your job while it is running.
+Most importantly, you can
+check progress using <a href="http://research.cs.wisc.edu/htcondor/manual/current/condor_q.html">condor_q</a>
+and
+abort jobs using <a href="http://research.cs.wisc.edu/htcondor/manual/current/condor_rm.html">condor_rm</a>
+.</p>
+<pre><code>$ condor_q 40
+-- Schedd: gridka30 : &lt;10.33.1.130:9618?... @ 02/22/17 11:12:03
+OWNER    BATCH_NAME               SUBMITTED   DONE   RUN    IDLE  TOTAL JOB_IDS
+mfischer CMD: /tmp/htc-test.sh   2/22 11:12      _      _      3      3 40.0-2
+
+3 jobs; 0 completed, 0 removed, 3 idle, 0 running, 0 held, 0 suspended
+</code></pre>
+<h3>Further Documentation</h3>
+<p>The HTCondor <a href="https://research.cs.wisc.edu/htcondor/manual/quickstart.html">Quickstart Guide</a> gives a comprehensive overview on job submission and management.</p>
+<p>All JDL settings supported by HTCondor are described in the <a href="http://research.cs.wisc.edu/htcondor/manual/current/condor_submit.html">condor_submit</a> documentation.
+A guide to common job submission options is available in the <a href="http://research.cs.wisc.edu/htcondor/manual/current/2_5Submitting_Job.html">documentation</a>.</p>
+<h3>Job Submission using <code>condor_qsub</code></h3>
+<p>If your workflows depend on the <code>qsub</code> command, you can use the compatibility wrapper <code>condor_qsub</code>.
+It replicates frequently used options of <code>qsub</code>.</p>
+<p>A single job similar to the above can be submitted using:</p>
+<pre><code>condor_qsub -W stagein=config.cfg,htc-test.sh htc-test.sh 2
+</code></pre>
+<p><strong>NOTE</strong>: The <code>condor_qsub</code> wrapper offers neither the full capability of <code>qsub</code> nor <code>condor_submit</code>.
+We strongly recommend the use of <code>condor_submit</code> to submit jobs to HTCondor.</p>

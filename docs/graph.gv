@@ -1,0 +1,6 @@
+    digraph g {
+        graph [rankdir=LR]
+        chainlet1 -> chainlet2 -> chainlet3 [arrowhead=veevee]
+        chainlet3 -> consumer [arrowhead=none,style=dotted]
+        consumer -> chainlet3 -> chainlet2 -> chainlet1 [label=next,constraint=false]
+    }
