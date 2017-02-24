@@ -17,7 +17,7 @@ class LinkerGrammar(unittest.TestCase):
     def test_pair(self):
         chainlet1 = NamedChainlet('1')
         chainlet2 = NamedChainlet('2')
-        for parent, child in itertools.combinations_with_replacement((chainlet1, chainlet2), 2):
+        for parent, child in itertools.product((chainlet1, chainlet2), repeat=2):
             with self.subTest(parent=parent, child=child):
                 chain_a = parent >> child
                 self.assertSequenceEqual(chain_a.elements, (parent, child))
@@ -28,7 +28,7 @@ class LinkerGrammar(unittest.TestCase):
         chainlet1 = NamedChainlet('1')
         chainlet2 = NamedChainlet('2')
         chainlet3 = NamedChainlet('3')
-        for a, b, c in itertools.combinations_with_replacement((chainlet1, chainlet2, chainlet3), 3):
+        for a, b, c in itertools.product((chainlet1, chainlet2, chainlet3), repeat=3):
             with self.subTest(a=a, b=b, c=c):
                 chain_a = a >> b >> c
                 self.assertSequenceEqual(chain_a.elements, (a, b, c))
@@ -48,7 +48,7 @@ class LinkerGrammar(unittest.TestCase):
         chainlet1 = NamedChainlet('1')
         chainlet2 = NamedChainlet('2')
         chainlet3 = NamedChainlet('3')
-        for a, b, c in itertools.combinations_with_replacement((chainlet1, chainlet2, chainlet3), 3):
+        for a, b, c in itertools.product((chainlet1, chainlet2, chainlet3), repeat=3):
             with self.subTest(a=a, b=b, c=c):
                 chain_a = a >> (b, c)
                 self.assertIs(chain_a.elements[0], a)
