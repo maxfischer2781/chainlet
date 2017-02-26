@@ -2,6 +2,8 @@ from __future__ import division, absolute_import
 import sys
 import functools
 
+from .compat import throw_method as _throw_method
+
 
 class ChainLink(object):
     """
@@ -99,9 +101,7 @@ class ChainLink(object):
         """Send a value to this element for processing"""
         return value
 
-    def throw(self, type, value=None, traceback=None):
-        """Throw an exception in this element"""
-        raise type(value, traceback)
+    throw = _throw_method
 
     def close(self):
         """Close this element, freeing resources and blocking further interactions"""
