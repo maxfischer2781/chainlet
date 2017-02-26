@@ -109,8 +109,8 @@ class ChainLink(object):
 
 
 class Chain(ChainLink):
-    def __init__(self, *elements):
-        self.elements = tuple(elements)
+    def __init__(self, elements):
+        self.elements = elements
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -168,7 +168,7 @@ class MetaChain(ParallelChain):
 
 def parallel_chain_converter(element):
     if isinstance(element, (tuple, list, set)):
-        return ParallelChain(*element)
+        return ParallelChain(element)
     raise TypeError
 
 
@@ -188,8 +188,8 @@ class ChainLinker(object):
             else:
                 _elements.append(element)
         if any(isinstance(element, ParallelChain) for element in _elements):
-            return MetaChain(*_elements)
-        return LinearChain(*_elements)
+            return MetaChain(_elements)
+        return LinearChain(_elements)
 
     def convert(self, element):
         for converter in self.converters:
