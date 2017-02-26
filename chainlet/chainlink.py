@@ -16,16 +16,9 @@ class ChainLink(object):
     * A parent may :py:meth:`send` a data chunk to a child.
     * A child may pull the :py:func:`next` data chunk from the parent.
 
-    Chaining is either done by explicitly calling :py:meth:`bind_parents` and
-    :py:meth:`bind_children`, or the shorter operator syntax as
-    ``parent >> child`` and `child << parent`.
-
-    The number of children and parents per link is arbitrary: the chain may
-    fork, join and even loop. Whether any of this is a sensible relation
-    depends on the implementation of each link.
-
-    Multiple bindings are created by passing multiple links when binding,
-    and/or binding a link multiple times.
+    Chaining is done with ``>>`` and ``<<`` operators as
+    ``parent >> child`` and `child << parent`. Forking and joining of chains
+    requires a sequence of multiple elements as parent or child.
 
     .. describe:: parent >> child
                   child << parent
@@ -35,26 +28,29 @@ class ChainLink(object):
        parent of ``a``, and vice versa.
 
     .. describe:: parent >> (child_a, child_b, ...)
+                  parent >> [child_a, child_b, ...]
+                  parent >> {child_a, child_b, ...}
 
-       Bind ``child_a``, ``child_a``, etc. as individual children of ``parent``.
+       Bind ``child_a``, ``child_b``, etc. as children of ``parent``.
 
     .. describe:: (parent_a, parent_b, ...) >> child
+                  [parent_a, parent_b, ...] >> child
+                  {parent_a, parent_b, ...} >> child
 
-       Bind ``parent_a``, ``parent_b``, etc. as individual parents of ``child``.
+       Bind ``parent_a``, ``parent_b``, etc. as parents of ``child``.
 
     Aside from binding, every :py:class:`ChainLink` should implement the
     `Generator-Iterator Methods`_ interface as applicable:
 
     .. method:: link.__next__()
+                link.send(None)
 
-       Pull the next data ``chunk`` from the link. Raise :py:exc:`StopIteration`
-       if there are no more chunks. Implicitly used in ``next(link)`` and in
-       ``for chunk in link``.
+       Create a new chunk of data. Raise :py:exc:`StopIteration` if there are
+       no more chunks. Implicitly used in ``next(link)`` and ``for chunk in link``.
 
     .. method:: link.send(chunk)
 
-       Send a data ``chunk`` into the link. Return the result based on this data,
-       if any.
+       Process a data ``chunk``, and return the result.
 
     .. method:: link.throw(type[, value[, traceback]])
 
@@ -64,21 +60,8 @@ class ChainLink(object):
 
     .. method:: link.close()
 
-       Close the link.
-
-    Note that the default implementation of these methods in :py:class:`ChainLink`
-    attempts to satisfy the interface with a minimum of assumptions. Most
-    importantly, the type, format and nesting of return values is up to
-    implementations.
-
-    In specific, :py:meth:`__next__` simply calls ``next`` on the parent, or raise
-    :py:exc:`StopIteration` if there is not exactly one parent.
-    In contrast, :py:meth:`send`, :py:meth:`throw` and
-    :py:meth:`close` always return :py:const:`None`; additionally, these
-    methods pass on any input to any bound children.
-
-    Subclasses are encouraged to use the :py:func:`super` methods for
-    :py:meth:`send`, :py:meth:`throw` and :py:meth:`close`.
+       Close the link, cleaning up any resources.. A closed link may raise
+       :py:exc:`RuntimeError` if data is requested via ``next``or processed via ``send``.
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
@@ -89,18 +72,18 @@ class ChainLink(object):
         linker = self.chain_linker if self.chain_linker is not None else default_linker
         return linker(self, children)
 
-    def __rrshift__(self, children):
+    def __rrshift__(self, parents):
         # parent >> self
-        return self << children
+        return self << parents
 
     def __lshift__(self, parents):
         # self << parent
         linker = self.chain_linker if self.chain_linker is not None else default_linker
         return linker(parents, self)
 
-    def __rlshift__(self, parent):
+    def __rlshift__(self, children):
         # children << self
-        return self >> parent
+        return self >> children
 
     def __iter__(self):
         return self
@@ -117,7 +100,7 @@ class ChainLink(object):
         return value
 
     def throw(self, type, value=None, traceback=None):
-        """Throw an exception is this element"""
+        """Throw an exception in this element"""
         raise type(value, traceback)
 
     def close(self):
@@ -130,7 +113,7 @@ class Chain(ChainLink):
         self.elements = tuple(elements)
 
     def __eq__(self, other):
-        if isinstance(other, Chain):
+        if isinstance(other, self.__class__):
             return self.elements == other.elements
         return NotImplemented
 
@@ -161,6 +144,9 @@ class ParallelChain(Chain):
     def send(self, value=None):
         return [element.send(value) for element in self.elements]
 
+    def __repr__(self):
+        return '[%s]' % ', '.join(repr(elem) for elem in self.elements)
+
 
 class MetaChain(ParallelChain):
     """
@@ -175,6 +161,9 @@ class MetaChain(ParallelChain):
             else:
                 values = [element.send(value) for value in values]
         return value
+
+    def __repr__(self):
+        return ' >> '.join(repr(elem) for elem in self.elements)
 
 
 def parallel_chain_converter(element):
