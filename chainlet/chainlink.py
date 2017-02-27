@@ -71,7 +71,7 @@ class ChainLink(object):
 
     def __rshift__(self, children):
         # self >> children
-        linker = self.chain_linker if self.chain_linker is not None else default_linker
+        linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(self, children)
 
     def __rrshift__(self, parents):
@@ -80,7 +80,7 @@ class ChainLink(object):
 
     def __lshift__(self, parents):
         # self << parent
-        linker = self.chain_linker if self.chain_linker is not None else default_linker
+        linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(parents, self)
 
     def __rlshift__(self, children):
@@ -97,7 +97,7 @@ class ChainLink(object):
         def next(self):
             return self.__next__()
 
-    def send(self, value=None):
+    def send(self, value=None):  # pylint: disable=no-self-use
         """Send a value to this element for processing"""
         return value
 
@@ -203,7 +203,7 @@ class ChainLinker(object):
         return self.link(*elements)
 
 
-default_linker = ChainLinker()
+DEFAULT_LINKER = ChainLinker()
 
 
 class WrapperMixin(object):
