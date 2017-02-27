@@ -1,16 +1,7 @@
 import itertools
 import unittest
 
-
-import chainlet
-
-
-class NamedChainlet(chainlet.ChainLink):
-    def __init__(self, name):
-        self.name = name
-
-    def __repr__(self):
-        return '<%s>' % self.name
+from chainlet_unittests.utility import NamedChainlet
 
 
 class LinkerGrammar(unittest.TestCase):
