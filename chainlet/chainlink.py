@@ -6,7 +6,7 @@ from .compat import throw_method as _throw_method
 
 
 class ChainLink(object):
-    """
+    r"""
     BaseClass for elements in a chain
 
     A chain is created by binding :py:class:`ChainLink`\ s together. This is
@@ -207,7 +207,7 @@ DEFAULT_LINKER = ChainLinker()
 
 
 class WrapperMixin(object):
-    """
+    r"""
     Mixin for :py:class:`ChainLink`\ s that wrap other objects
 
     Apply as a mixin via multiple inheritance:
