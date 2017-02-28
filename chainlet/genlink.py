@@ -71,7 +71,7 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
         """Send a value to this element for processing"""
         return self.__wrapped__.send(value)
 
-    def throw(self, type, value=None, traceback=None):
+    def throw(self, type, value=None, traceback=None):  # pylint: disable=redefined-builtin
         """Raise an exception in this element"""
         return self.__wrapped__.throw(type, value, traceback)
 
