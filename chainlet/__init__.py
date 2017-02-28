@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from .chainlink import ChainLink
-from .funclink import FunctionLink
-from .genlink import GeneratorLink
+from .funclink import FunctionLink, funclet
+from .genlink import GeneratorLink, genlet
 
-__all__ = [ChainLink.__name__, FunctionLink.__name__, GeneratorLink.__name__]
+__all__ = ['ChainLink', 'FunctionLink', 'funclet', 'GeneratorLink', 'genlet']
