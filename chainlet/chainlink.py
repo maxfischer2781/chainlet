@@ -1,6 +1,5 @@
 from __future__ import division, absolute_import
 import sys
-import functools
 
 from .compat import throw_method as _throw_method
 
@@ -145,7 +144,7 @@ class ParallelChain(Chain):
         return [element.send(value) for element in self.elements]
 
     def __repr__(self):
-        return '[%s]' % ', '.join(repr(elem) for elem in self.elements)
+        return repr(self.elements)
 
 
 class MetaChain(ParallelChain):
@@ -153,14 +152,14 @@ class MetaChain(ParallelChain):
     A mixed sequence of linear and parallel chainlets
     """
     def send(self, value=None):
-        values = []
+        values = [value]
         for element in self.elements:
             if isinstance(element, ParallelChain):
                 # flatten output of parallel paths
-                values = [elem.send(value) for value in values for elem in element]
+                values = [retval for value in values for retval in element.send(value)]
             else:
                 values = [element.send(value) for value in values]
-        return value
+        return values
 
     def __repr__(self):
         return ' >> '.join(repr(elem) for elem in self.elements)
@@ -206,44 +205,3 @@ class ChainLinker(object):
 DEFAULT_LINKER = ChainLinker()
 
 
-class WrapperMixin(object):
-    r"""
-    Mixin for :py:class:`ChainLink`\ s that wrap other objects
-
-    Apply as a mixin via multiple inheritance:
-
-    .. code:: python
-
-        class MyWrap(WrapperMixin, ChainLink):
-            def __init__(self, slave):
-                super().__init__(slave=slave)
-
-            def send(self, value):
-                value = self.__wrapped__.send(value)
-                super().send(value)
-
-    Wrappers bind their slave to ``__wrapped__``, as is the Python standard,
-    and also expose them via the ``slave`` property for convenience.
-    """
-    def __init__(self, slave):
-        super(WrapperMixin, self).__init__()
-        self.__wrapped__ = slave
-
-    @property
-    def slave(self):
-        return self.__wrapped__
-
-    @classmethod
-    def linklet(cls, target):
-        """
-        Convert any callable constructor to a chain link constructor
-        """
-        def linker(*args, **kwargs):
-            """
-            Creates a new instance of a chain link
-
-            :rtype: ChainLink
-            """
-            return cls(target(*args, **kwargs))
-        functools.update_wrapper(linker, target)
-        return linker

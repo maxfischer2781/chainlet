@@ -3,7 +3,7 @@ Helpers for creating ChainLinks from generators
 
 Tools of this module allow writing simpler code by expressing functionality
 via generators. The interface to other `chainlet` objects is automatically
-built around the generators. Using generators in chains allows to carry state
+built around the generator. Using generators in chains allows to carry state
 between steps.
 
 A regular generator can be directly used by wrapping :py:class:`GeneratorLink`
@@ -30,18 +30,19 @@ applying a decorator:
     from collections import deque
     from mylib import producer, consumer
 
-    @GeneratorLink.linklet
+    @genlet
     def windowed_average(size=8):
         # ...
 
     producer >> windowed_average(16) >> consumer
 """
 from __future__ import division, absolute_import
+import functools
 
-from . import chainlink
+from . import chainlink, wrapper
 
 
-class GeneratorLink(chainlink.WrapperMixin, chainlink.ChainLink):
+class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
     """
     Wrapper making a generator act like a ChainLink
 
@@ -49,17 +50,13 @@ class GeneratorLink(chainlink.WrapperMixin, chainlink.ChainLink):
     :param prime: advance the generator to the next/first yield
     :type prime: bool
 
-    :note: Use the :py:meth:`linklet` method if you wish to decorate a
+    :note: Use the :py:func:`linklet` function if you wish to decorate a
            generator *function* to produce GeneratorLinks.
 
-    This class wraps an already instantiated generator, using it to perform
-    work when receiving a value and passing on the result. The `slave` can be
-    any object that implements the generator protocol.
-
-    Calling `next(wrapper)` translates directly to `next(wrapper.slave)`. Note
-    that the `slave` has no reference to its wrapper, including its parents and
-    children - it can only act as a producer, disregarding previous elements of
-    the chain.
+    This class wraps a generator, using it to perform work when receiving
+    a value and passing on the result. The `slave` can be any object that
+    implements the generator protocol - the methods `send`, `throw` and `close`
+    are directly called on the `slave`.
     """
     def __init__(self, slave, prime=True):
         super(GeneratorLink, self).__init__(slave=slave)
@@ -71,14 +68,28 @@ class GeneratorLink(chainlink.WrapperMixin, chainlink.ChainLink):
         return next(self.__wrapped__)
 
     def send(self, value=None):
-        """Send a value to this element"""
-        result = self.__wrapped__.send(value)
-        return super(GeneratorLink, self).send(result)
+        """Send a value to this element for processing"""
+        return self.__wrapped__.send(value)
 
     def throw(self, type, value=None, traceback=None):
-        super(GeneratorLink, self).throw(type, value, traceback)
-        self.__wrapped__.throw(type, value, traceback)
+        """Raise an exception in this element"""
+        return self.__wrapped__.throw(type, value, traceback)
 
     def close(self):
-        super(GeneratorLink, self).close()
-        self.__wrapped__.close()
+        """Close this element, freeing resources and blocking further interactions"""
+        return self.__wrapped__.close()
+
+
+def genlet(generator_function):
+    """
+    Convert a generator function to a :py:class:`~chainlink.ChainLink`
+    """
+    def linker(*args, **kwargs):
+        """
+        Creates a new generator instance acting as a chainlet.ChainLink
+
+        :rtype: :py:class:`~chainlink.ChainLink`
+        """
+        return GeneratorLink(generator_function(*args, **kwargs))
+    functools.update_wrapper(linker, generator_function)
+    return linker

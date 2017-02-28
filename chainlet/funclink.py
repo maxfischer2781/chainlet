@@ -16,7 +16,7 @@ around it:
     def stepper(value, resolution=10):
         return (value // resolution) * resolution
 
-    producer >> FunctionLink(windowed_average, 20) >> consumer
+    producer >> FunctionLink(stepper, 20) >> consumer
 
 If a function is used only as a chainlet, one may permanently convert it by
 applying a decorator:
@@ -35,10 +35,11 @@ applying a decorator:
 from __future__ import division, absolute_import
 import functools
 
+import chainlet.wrapper
 from . import chainlink
 
 
-class FunctionLink(chainlink.WrapperMixin, chainlink.ChainLink):
+class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     """
     Wrapper making a generator act like a ChainLink
 
@@ -46,16 +47,16 @@ class FunctionLink(chainlink.WrapperMixin, chainlink.ChainLink):
     :param args: positional arguments for the slave
     :param kwargs: keyword arguments for the slave
 
-    :note: Use the :py:meth:`linklet` method if you wish to decorate a
+    :note: Use the :py:func:`funclet` function if you wish to decorate a
            function to produce FunctionLinks.
 
-    This class wraps a function partially, using it to perform
+    This class wraps a function partially, calling it to perform
     work when receiving a value and passing on the result. The `slave` can be
-    any object that is callable.
+    any object that is callable, and should at least a named parameter `value`.
 
-    Calling is performed naively - ``next(wrapper)`` translates to
-    ``wrapper.slave(*args, **kwargs)``, and ``wrapper.send(value)`` translates
-    to ``wrapper.slave(value, *args, **kwargs)``.
+    When receiving a value as part of a chain, :py:meth:`send` acts like
+    `slave(value=value, *args, **kwargs)`. Any calls to :py:meth:`throw` and :py:meth:`close`
+    are ignored.
     """
     def __init__(self, slave, *args, **kwargs):
         super(FunctionLink, self).__init__(slave=slave)
@@ -71,13 +72,17 @@ class FunctionLink(chainlink.WrapperMixin, chainlink.ChainLink):
         result = self.__wrapped__(value=value, *self._wrapped_args, **self._wrapped_kwargs)
         return super(FunctionLink, self).send(result)
 
-    @classmethod
-    def linklet(cls, target):
+
+def funclet(function):
+    """
+    Convert a function to a :py:class:`~chainlink.ChainLink`
+    """
+    def linker(*args, **kwargs):
         """
-        Convert any callable constructor to a chain link constructor
+        Creates a partially bound function acting as a chainlet.ChainLink
+
+        :rtype: :py:class:`~chainlink.ChainLink`
         """
-        def linker(*args, **kwargs):
-            """Creates a new instance of a chain link"""
-            return cls(target, *args, **kwargs)
-        functools.update_wrapper(linker, target)
-        return linker
+        return FunctionLink(function, *args, **kwargs)
+    functools.update_wrapper(linker, function)
+    return linker
