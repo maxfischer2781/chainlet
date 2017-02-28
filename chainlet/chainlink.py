@@ -203,5 +203,3 @@ class ChainLinker(object):
 
 
 DEFAULT_LINKER = ChainLinker()
-
-
