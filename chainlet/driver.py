@@ -6,7 +6,10 @@ from . import chainlink
 
 class ChainDriver(chainlink.ChainLink):
     """
-    Actively drives a chain by pulling it
+    Actively drives chains by pulling them
+
+    This driver pulls all mounted chains via a single thread. This drives chains
+    synchronously, but blocks all chains if any individual chain blocks.
     """
     def __init__(self):
         super(ChainDriver, self).__init__()
@@ -15,6 +18,7 @@ class ChainDriver(chainlink.ChainLink):
         self._run_thread = None
 
     def mount(self, *chains):
+        """Add chains to this driver"""
         self.mounts.extend(chains)
 
     @property
@@ -61,10 +65,11 @@ class ChainDriver(chainlink.ChainLink):
 
 class ThreadedChainDriver(ChainDriver):
     """
-    Actively drives a chain by pulling from parents and sending to children
+    Actively drives chains by pulling them
 
-    This driver pulls and sends values via independent threads. This drives the
-    chain concurrently, without blocking for any specific parent.
+    This driver pulls all mounted chains via independent threads. This drives chains
+    concurrently, without blocking for any specific chain. Chains sharing elements
+    may need to be synchronized explicitly.
 
     :param daemon: run threads as ``daemon``, i.e. do not wait for them to finish
     :type daemon: bool
