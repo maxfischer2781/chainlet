@@ -6,12 +6,16 @@ from . import chainlink
 
 class ChainDriver(chainlink.ChainLink):
     """
-    Actively drives a chain by pulling from parents and sending to children
+    Actively drives a chain by pulling it
     """
     def __init__(self):
         super(ChainDriver, self).__init__()
+        self.mounts = []
         self._run_lock = threading.Lock()
         self._run_thread = None
+
+    def mount(self, *chains):
+        self.mounts.extend(chains)
 
     @property
     def running(self):
@@ -28,13 +32,13 @@ class ChainDriver(chainlink.ChainLink):
         """
         if self._run_lock.acquire(False):
             try:
-                if self._run_thread is not None:
-                    raise RuntimeError("ChainDriver already started")
                 self._run_thread = threading.Thread(target=self._run_in_thread)
                 self._run_thread.daemon = daemon
                 self._run_thread.start()
             finally:
                 self._run_lock.release()
+        else:
+            raise RuntimeError("ChainDriver already active")
 
     def _run_in_thread(self):
         try:
@@ -46,25 +50,13 @@ class ChainDriver(chainlink.ChainLink):
         """
         Start driving the chain, block until done
         """
-        raise NotImplementedError
-
-
-class SequentialChainDriver(ChainDriver):
-    """
-    Actively drives a chain by pulling from parents and sending to children
-
-    This driver pulls and sends values sequentially. If any parent blocks on
-    a call to `next(parent)`, the entire chain blocks until a value is available.
-    """
-    def run(self):
         with self._run_lock:
-            while True:
-                for parent in self._parents:
+            while self.mounts:
+                for mount in self.mounts:
                     try:
-                        value = next(parent)
-                        self.send(value)
+                        next(mount)
                     except StopIteration:
-                        pass
+                        self.mounts.remove(mount)
 
 
 class ThreadedChainDriver(ChainDriver):
@@ -76,34 +68,25 @@ class ThreadedChainDriver(ChainDriver):
 
     :param daemon: run threads as ``daemon``, i.e. do not wait for them to finish
     :type daemon: bool
-    :param synchronize: synchronize children so they handle one value at a time
-    :type synchronize: bool
     """
-    def __init__(self, daemon=True, synchronize=True):
+    def __init__(self, daemon=True):
         super(ThreadedChainDriver, self).__init__()
         self.daemon = daemon
-        self._child_mutex = threading.Lock() if synchronize else None
-
-    @property
-    def synchronize(self):
-        return self._child_mutex is not None
 
     def run(self):
         with self._run_lock:
             runner_threads = [
-                threading.Thread(target=self._parent_chain_driver, args=(parent,)) for parent in self._parents
-            ]
+                threading.Thread(target=self._mount_driver, args=(mount,)) for mount in self.mounts
+                ]
             for runner_thread in runner_threads:
                 runner_thread.daemon = self.daemon
                 runner_thread.start()
             for runner_thread in runner_threads:
                 runner_thread.join()
 
-    def _parent_chain_driver(self, parent):
-        if self._child_mutex:
-            for value in parent:
-                with self._child_mutex:
-                    self.send(value)
-        else:
-            for value in parent:
-                self.send(value)
+    def _mount_driver(self, mount):
+        try:
+            while True:
+                next(mount)
+        except IndexError:
+            self.mounts.remove(mount)
