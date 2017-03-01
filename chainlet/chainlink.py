@@ -187,7 +187,7 @@ class MetaChain(ParallelChain):
                 _elements.append(element)
             else:
                 _elements_buffer.append(element)
-        super(ParallelChain, self).__init__(tuple(elements))
+        super(MetaChain, self).__init__(tuple(elements))
 
     def _compile_paths(self):
         if not self.elements:
