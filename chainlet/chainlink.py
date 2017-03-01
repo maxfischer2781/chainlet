@@ -187,6 +187,8 @@ class ChainLinker(object):
             else:
                 _elements.append(element)
         if any(isinstance(element, ParallelChain) for element in _elements):
+            if len(_elements) == 1:
+                return _elements[0]
             return MetaChain(_elements)
         return LinearChain(_elements)
 
