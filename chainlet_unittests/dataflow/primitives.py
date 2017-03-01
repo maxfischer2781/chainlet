@@ -4,7 +4,7 @@ import unittest
 from chainlet_unittests.utility import Adder
 
 
-class PushChain(unittest.TestCase):
+class ChainPrimitives(unittest.TestCase):
     def test_pair(self):
         """Push single link chain as `parent >> child`"""
         elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
