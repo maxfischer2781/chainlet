@@ -68,6 +68,24 @@ class ChainLink(object):
     """
     chain_linker = None
 
+    def __init__(self):
+        self._path = None
+
+    def _compile_paths(self):
+        """Compile the paths visited by this element"""
+        return LinearChain((self,)),
+
+    @property
+    def paths(self):
+        """
+        All chains visited by this element
+
+        :returns: :py:class:`~.LinearChain`
+        """
+        if self._path is None:
+            self._path = self._compile_paths()
+        return self._path
+
     def __rshift__(self, children):
         # self >> children
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
@@ -110,6 +128,7 @@ class ChainLink(object):
 class Chain(ChainLink):
     def __init__(self, elements):
         self.elements = elements
+        super(Chain, self).__init__()
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -127,6 +146,9 @@ class LinearChain(Chain):
     """
     A linear sequence of chainlets, with each element preceding the next
     """
+    def _compile_paths(self):
+        return self,
+
     def send(self, value=None):
         for element in self.elements:
             value = element.send(value)
@@ -140,6 +162,9 @@ class ParallelChain(Chain):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
+    def _compile_paths(self):
+        return tuple(path for element in self.elements for path in element.paths)
+
     def send(self, value=None):
         return [element.send(value) for element in self.elements]
 
@@ -151,6 +176,29 @@ class MetaChain(ParallelChain):
     """
     A mixed sequence of linear and parallel chainlets
     """
+    def __init__(self, elements):
+        _elements = []
+        _elements_buffer = []
+        for element in elements:
+            if isinstance(element, ParallelChain):
+                if _elements_buffer:
+                    _elements.append(LinearChain(tuple(_elements_buffer)))
+                    _elements_buffer = []
+                _elements.append(element)
+            else:
+                _elements_buffer.append(element)
+        super(ParallelChain, self).__init__(tuple(elements))
+
+    def _compile_paths(self):
+        if not self.elements:
+            return ()
+        element_iter = iter(self.elements)
+        paths = next(element_iter).paths
+        for element in element_iter:
+            paths = [old_path >> new_path for old_path in paths for new_path in element.paths]
+        return tuple(paths)
+
+
     def send(self, value=None):
         values = [value]
         for element in self.elements:
