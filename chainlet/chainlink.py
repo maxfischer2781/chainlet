@@ -198,7 +198,6 @@ class MetaChain(ParallelChain):
             paths = [old_path >> new_path for old_path in paths for new_path in element.paths]
         return tuple(paths)
 
-
     def send(self, value=None):
         values = [value]
         for element in self.elements:
