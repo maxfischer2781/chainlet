@@ -2,6 +2,7 @@ from __future__ import division, absolute_import
 import sys
 
 from .compat import throw_method as _throw_method
+from . import utility
 
 
 class ChainLink(object):
@@ -67,6 +68,8 @@ class ChainLink(object):
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
     chain_linker = None
+    #: special return value for :py:meth:`send` to abort further traversal of a chain
+    stop_traversal = utility.Sentinel('End Of Chain Traversal')
 
     def __init__(self):
         self._path = None
@@ -150,8 +153,11 @@ class LinearChain(Chain):
         return self,
 
     def send(self, value=None):
+        stop_traversal = self.stop_traversal
         for element in self.elements:
             value = element.send(value)
+            if value is stop_traversal:
+                return stop_traversal
         return value
 
     def __repr__(self):
@@ -166,7 +172,12 @@ class ParallelChain(Chain):
         return tuple(path for element in self.elements for path in element.paths)
 
     def send(self, value=None):
-        return [element.send(value) for element in self.elements]
+        stop_traversal = self.stop_traversal
+        return [
+            retval for retval in (
+                element.send(value) for element in self.elements
+            ) if retval is not stop_traversal
+        ]
 
     def __repr__(self):
         return repr(self.elements)
@@ -199,11 +210,12 @@ class MetaChain(ParallelChain):
         return tuple(paths)
 
     def send(self, value=None):
+        stop_traversal = self.stop_traversal
         values = [value]
         for element in self.elements:
             if isinstance(element, ParallelChain):
                 # flatten output of parallel paths
-                values = [retval for value in values for retval in element.send(value)]
+                values = [retval for value in values for retval in element.send(value) if retval is not stop_traversal]
             else:
                 values = [element.send(value) for value in values]
         return values
