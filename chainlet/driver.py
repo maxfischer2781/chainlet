@@ -82,7 +82,7 @@ class ThreadedChainDriver(ChainDriver):
         with self._run_lock:
             runner_threads = [
                 threading.Thread(target=self._mount_driver, args=(mount,)) for mount in self.mounts
-                ]
+            ]
             for runner_thread in runner_threads:
                 runner_thread.daemon = self.daemon
                 runner_thread.start()
