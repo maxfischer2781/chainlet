@@ -1,5 +1,5 @@
 __title__ = 'chainlet'
-__summary__ = 'tools for linking generators/iterators to processing chains'
+__summary__ = 'Framework for linking generators/iterators to processing chains, trees and graphs'
 __url__ = 'https://github.com/maxfischer2781/chainlet'
 
 __version__ = '0.9.0'

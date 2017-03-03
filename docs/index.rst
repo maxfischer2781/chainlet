@@ -11,6 +11,7 @@ chainlet - blocks for processing chains
     :caption: Documentation Topics Overview:
 
     source/grammar
+    source/chains
     Module Index <source/api/modules>
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.

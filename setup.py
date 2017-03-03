@@ -38,7 +38,7 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
         ],
-        keywords='chaining chain generator stream pipeline',
+        keywords='chaining generator stream pipeline chain tree graph',
         # unit tests
         test_suite='chainlet_unittests',
         # use unittest backport to have subTest etc.
