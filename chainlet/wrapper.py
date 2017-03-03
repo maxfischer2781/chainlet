@@ -1,6 +1,3 @@
-import functools
-
-
 class WrapperMixin(object):
     r"""
     Mixin for :py:class:`ChainLink`\ s that wrap other objects
