@@ -63,7 +63,7 @@ class ChainLink(object):
     .. method:: link.close()
 
        Close the link, cleaning up any resources.. A closed link may raise
-       :py:exc:`RuntimeError` if data is requested via ``next``or processed via ``send``.
+       :py:exc:`RuntimeError` if data is requested via ``next`` or processed via ``send``.
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """

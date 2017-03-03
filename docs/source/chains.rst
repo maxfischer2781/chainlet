@@ -8,18 +8,25 @@ The major difference is whether the chain is given an input, or produces output.
 .. code::
 
     chain = chainlet1 >> chainlet2 >> chainlet3
+    print(next(chain))  # pull from chain
+    chain.send('input')  # push to chain
+
 
 Pulling Chains
 --------------
 
 When pulling data from chains, they act like generators and iterators.
 Simply call ``next`` on the chain to receive a value.
-It is also possible to use them like iterators in loops and similar constructs.
 
 .. code::
 
     value = next(chain)
     print(value)
+
+It is also possible to use them like iterators in loops and similar constructs.
+
+.. code::
+
     for value in chain:
         print(value)
 
