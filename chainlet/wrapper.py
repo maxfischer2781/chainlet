@@ -27,18 +27,3 @@ class WrapperMixin(object):
     @property
     def slave(self):
         return self.__wrapped__
-
-    @classmethod
-    def linklet(cls, target):
-        """
-        Convert any callable constructor to a chain link constructor
-        """
-        def linker(*args, **kwargs):
-            """
-            Creates a new instance of a chain link
-
-            :rtype: ChainLink
-            """
-            return cls(target(*args, **kwargs))
-        functools.update_wrapper(linker, target)
-        return linker
