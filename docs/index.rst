@@ -6,6 +6,19 @@
 chainlet - blocks for processing chains
 =======================================
 
+.. image:: https://travis-ci.org/maxfischer2781/chainlet.svg?branch=master
+   :target: https://travis-ci.org/maxfischer2781/chainlet
+   :alt: Build Status
+.. image:: https://landscape.io/github/maxfischer2781/chainlet/master/landscape.svg?style=flat
+   :target: https://landscape.io/github/maxfischer2781/chainlet/master
+   :alt: Code Health
+.. image:: https://codecov.io/gh/maxfischer2781/chainlet/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/maxfischer2781/chainlet
+   :alt: Test Coverage
+.. image:: https://readthedocs.org/projects/chainlet/badge/?version=latest
+   :target: http://chainlet.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
 .. toctree::
     :maxdepth: 1
     :caption: Documentation Topics Overview:

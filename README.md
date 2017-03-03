@@ -1,6 +1,11 @@
 # Chainlet
 
-Toolbox for linking generator/iterators to create processing chains and pipelines.
+[![Documentation Status](https://readthedocs.org/projects/chainlet/badge/?version=latest)](http://chainlet.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/maxfischer2781/chainlet.svg?branch=master)](https://travis-ci.org/maxfischer2781/chainlet)
+[![Code Health](https://landscape.io/github/maxfischer2781/chainlet/master/landscape.svg?style=flat)](https://landscape.io/github/maxfischer2781/chainlet/master)
+[![codecov](https://codecov.io/gh/maxfischer2781/chainlet/branch/master/graph/badge.svg)](https://codecov.io/gh/maxfischer2781/chainlet)
+
+Framework for linking generator/iterators to create processing chains and pipelines.
 With its operator based syntax, one may build complex sequences from simple building blocks.
 Chainlets are suitable for incremental, iterative and stream processing and beyond.
 
