@@ -70,6 +70,10 @@ class ChainLink(object):
     chain_linker = None
     #: special return value for :py:meth:`send` to abort further traversal of a chain
     stop_traversal = utility.Sentinel('End Of Chain Traversal')
+    #: whether this element processes several data chunks at once
+    join = False
+    #: whether this element produces several data chunks at once
+    fork = False
 
     def __rshift__(self, children):
         # self >> children
@@ -131,6 +135,9 @@ class LinearChain(Chain):
     """
     A linear sequence of chainlets, with each element preceding the next
     """
+    join = False
+    fork = False
+
     def send(self, value=None):
         stop_traversal = self.stop_traversal
         for element in self.elements:
@@ -147,6 +154,9 @@ class ParallelChain(Chain):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
+    join = False
+    fork = True
+
     def send(self, value=None):
         stop_traversal = self.stop_traversal
         return [
@@ -177,12 +187,17 @@ class MetaChain(ParallelChain):
         super(MetaChain, self).__init__(tuple(elements))
 
     def send(self, value=None):
+        # traverse breadth first to allow for synchronized forking and joining
         stop_traversal = self.stop_traversal
         values = [value]
         for element in self.elements:
-            if isinstance(element, ParallelChain):
-                # flatten output of parallel paths
+            # aggregate input for joining paths, flatten output of parallel paths
+            if element.fork and element.join:
+                values = [retval for retval in element.send(values) if retval is not stop_traversal]
+            elif element.fork and not element.join:
                 values = [retval for value in values for retval in element.send(value) if retval is not stop_traversal]
+            elif element.join:
+                values = [element.send(values)]
             else:
                 values = [element.send(value) for value in values]
         return values
@@ -210,11 +225,13 @@ class ChainLinker(object):
             element = self.convert(element)
             if isinstance(element, (LinearChain, MetaChain)):
                 _elements.extend(element.elements)
+            elif hasattr(element, 'elements') and not element.elements:
+                pass
             else:
                 _elements.append(element)
+        if len(_elements) == 1:
+            return _elements[0]
         if any(isinstance(element, ParallelChain) for element in _elements):
-            if len(_elements) == 1:
-                return _elements[0]
             return MetaChain(_elements)
         return LinearChain(_elements)
 
