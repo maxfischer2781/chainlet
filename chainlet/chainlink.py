@@ -71,24 +71,6 @@ class ChainLink(object):
     #: special return value for :py:meth:`send` to abort further traversal of a chain
     stop_traversal = utility.Sentinel('End Of Chain Traversal')
 
-    def __init__(self):
-        self._path = None
-
-    def _compile_paths(self):
-        """Compile the paths visited by this element"""
-        return LinearChain((self,)),
-
-    @property
-    def paths(self):
-        """
-        All chains visited by this element
-
-        :returns: :py:class:`~.LinearChain`
-        """
-        if self._path is None:
-            self._path = self._compile_paths()
-        return self._path
-
     def __rshift__(self, children):
         # self >> children
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
@@ -149,9 +131,6 @@ class LinearChain(Chain):
     """
     A linear sequence of chainlets, with each element preceding the next
     """
-    def _compile_paths(self):
-        return self,
-
     def send(self, value=None):
         stop_traversal = self.stop_traversal
         for element in self.elements:
@@ -168,9 +147,6 @@ class ParallelChain(Chain):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
-    def _compile_paths(self):
-        return tuple(path for element in self.elements for path in element.paths)
-
     def send(self, value=None):
         stop_traversal = self.stop_traversal
         return [
@@ -199,15 +175,6 @@ class MetaChain(ParallelChain):
             else:
                 _elements_buffer.append(element)
         super(MetaChain, self).__init__(tuple(elements))
-
-    def _compile_paths(self):
-        if not self.elements:
-            return ()
-        element_iter = iter(self.elements)
-        paths = next(element_iter).paths
-        for element in element_iter:
-            paths = [old_path >> new_path for old_path in paths for new_path in element.paths]
-        return tuple(paths)
 
     def send(self, value=None):
         stop_traversal = self.stop_traversal
