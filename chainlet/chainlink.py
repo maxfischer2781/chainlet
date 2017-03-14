@@ -65,15 +65,32 @@ class ChainLink(object):
        Close the link, cleaning up any resources.. A closed link may raise
        :py:exc:`RuntimeError` if data is requested via ``next`` or processed via ``send``.
 
+    When used in a chain, each :py:class:`ChainLink` is distinguished by its handling
+    of input and output. There are two attributes to signal the behaviour when chained.
+    These specify whether the element performs a `1 -> 1`, `n -> 1`, `1 -> m` or `n -> m`
+    processing of data.
+
+    .. py:attribute:: chain_join
+
+       A :py:class:`bool` indicating that the element expects the values of all
+       preceding elements at once. That is, the `chunk` passed in via :py:meth:`send`
+       is an *iterable* providing the return values of the previous elements.
+
+    .. py:attribute:: chain_fork
+
+       A :py:class:`bool` indicating that the element produces several values
+       at once. That is, the return value is an *iterable* of data chunks,
+       each of which should be passed on independently.
+
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
     chain_linker = None
     #: special return value for :py:meth:`send` to abort further traversal of a chain
     stop_traversal = utility.Sentinel('End Of Chain Traversal')
     #: whether this element processes several data chunks at once
-    join = False
+    chain_join = False
     #: whether this element produces several data chunks at once
-    fork = False
+    chain_fork = False
 
     def __rshift__(self, children):
         # self >> children
@@ -115,6 +132,12 @@ class ChainLink(object):
 
 
 class Chain(ChainLink):
+    """
+    Baseclass for compound chainlets consisting of other chainlets
+
+    :param elements: the chainlets making up this chain
+    :type elements: iterable[:py:class:`ChainLink`]
+    """
     def __init__(self, elements):
         self.elements = elements
         super(Chain, self).__init__()
@@ -135,8 +158,8 @@ class LinearChain(Chain):
     """
     A linear sequence of chainlets, with each element preceding the next
     """
-    join = False
-    fork = False
+    chain_join = False
+    chain_fork = False
 
     def send(self, value=None):
         stop_traversal = self.stop_traversal
@@ -188,18 +211,22 @@ class MetaChain(ParallelChain):
 
     def send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
-        stop_traversal = self.stop_traversal
         values = [value]
         for element in self.elements:
+            stop_traversal = element.stop_traversal
             # aggregate input for joining paths, flatten output of parallel paths
-            if element.fork and element.join:
+            if element.chain_fork and element.chain_join:
                 values = [retval for retval in element.send(values) if retval is not stop_traversal]
-            elif element.fork and not element.join:
+            # flatten output of parallel paths for each input
+            elif element.chain_fork and not element.chain_join:
                 values = [retval for value in values for retval in element.send(value) if retval is not stop_traversal]
-            elif element.join:
-                values = [element.send(values)]
+            # aggregate input for joining paths
+            elif not element.chain_join:
+                values = [retval for retval in (element.send(value) for value in values) if retval is not stop_traversal]
             else:
-                values = [element.send(value) for value in values]
+                values = [element.send(values)]
+                if values[0] == stop_traversal:
+                    values = []
         return values
 
     def __repr__(self):
