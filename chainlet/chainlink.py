@@ -182,11 +182,11 @@ class ParallelChain(Chain):
 
     def send(self, value=None):
         stop_traversal = self.stop_traversal
-        return [
+        return type(self.elements)(
             retval for retval in (
                 element.send(value) for element in self.elements
             ) if retval is not stop_traversal
-        ]
+        )
 
     def __repr__(self):
         return repr(self.elements)
