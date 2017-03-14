@@ -177,8 +177,8 @@ class ParallelChain(Chain):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
-    join = False
-    fork = True
+    chain_join = False
+    chain_fork = True
 
     def send(self, value=None):
         stop_traversal = self.stop_traversal
