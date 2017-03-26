@@ -48,7 +48,7 @@ Chains do not preserve syntactic orientation, so a ``>>``-linked chain can be li
     chain_b = chain_a << parent2
     chain_c = chain_b >> child2
 
-Links can be chained directly, so there is no need to store intermediate subchains.
+Links can be chained directly; there is no need to store intermediate subchains if you do not use them.
 
 .. code:: python
 
@@ -84,9 +84,42 @@ Simply use a :py:func:`tuple`, :py:func:`list` or :py:func:`set` as child or par
 
 .. code::
 
-    chain = a >> (b >> c, d)
+    fork_chain = a >> (b >> c, d)
+    join_chain = (a, b >> c) >> d
 
+The resulting chains are actually fully featured, directed graphs.
 
+.. graphviz::
+
+    digraph graphname {
+        graph [rankdir=LR]
+        a -> d
+        b -> c -> d
+    }
+
+.. graphviz::
+
+    digraph graphname {
+        graph [rankdir=LR]
+        a -> b -> c
+        a -> d
+    }
+
+Links are agnostic with regard to *how* a group of elements is created.
+This allows you to use comprehensions and calls to generate forks and joins dynamically.
+
+.. code::
+
+    a >> {node(idx) for idx in range(3)}
+
+.. graphviz::
+
+    digraph graphname {
+        graph [rankdir=LR]
+        a -> "node(1)"
+        a -> "node(2)"
+        a -> "node(3)"
+    }
 
 .. [#linkop] These are the ``__rshift__`` and ``__lshift__`` operators.
              Overwriting these operators on objects changes their linking behaviour.
