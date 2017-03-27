@@ -180,7 +180,7 @@ class LinearChain(Chain):
         for element in self.elements:
             value = element.send(value)
             if value is element.stop_traversal:
-                return stop_traversal
+                return self.stop_traversal
         return value
 
     def __repr__(self):
