@@ -177,10 +177,9 @@ class LinearChain(Chain):
     chain_fork = False
 
     def send(self, value=None):
-        stop_traversal = self.stop_traversal
         for element in self.elements:
             value = element.send(value)
-            if value is stop_traversal:
+            if value is element.stop_traversal:
                 return stop_traversal
         return value
 
@@ -196,12 +195,17 @@ class ParallelChain(Chain):
     chain_fork = True
 
     def send(self, value=None):
-        stop_traversal = self.stop_traversal
-        return type(self.elements)(
-            retval for retval in (
-                element.send(value) for element in self.elements
-            ) if retval is not stop_traversal
-        )
+        return type(self.elements)(self._send_iter(value))
+
+    def _send_iter(self, value):
+        for element in self.elements:
+            if element.chain_fork:
+                for val in element.send(value):
+                    yield val
+            else:
+                val = element.send(value)
+                if val is not element.stop_traversal:
+                    yield val
 
     def __repr__(self):
         return repr(self.elements)
