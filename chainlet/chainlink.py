@@ -234,10 +234,10 @@ class MetaChain(ParallelChain):
         for element in self.elements:
             stop_traversal = element.stop_traversal
             # aggregate input for joining paths, flatten output of parallel paths
-            if element.chain_fork and element.chain_join:
+            if element.chain_join and element.chain_fork:
                 values = [retval for retval in element.send(values) if retval is not stop_traversal]
             # flatten output of parallel paths for each input
-            elif element.chain_fork and not element.chain_join:
+            elif not element.chain_join and element.chain_fork:
                 values = [retval for value in values for retval in element.send(value) if retval is not stop_traversal]
             # neither fork nor join, unwrap input and output
             elif not element.chain_join:
