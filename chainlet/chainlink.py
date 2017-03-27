@@ -82,11 +82,22 @@ class ChainLink(object):
        at once. That is, the return value is an *iterable* of data chunks,
        each of which should be passed on independently.
 
+    To prematurely stop the traversal of a chain, `1 -> n` and `n -> m` elements should
+    return an empty container. Any `1 -> 1` and `n -> 1` element can define a
+    special return value that stops traversal.
+
+    .. py:attribute:: stop_traversal
+
+       Special return value that stops further traversal of the chain when returned by
+       `1 -> 1` and `n -> 1` elements. This attribute is ignored on`1 -> n` and `n -> m` elements.
+       This value may be returned by calls to ``element.send`` and ``next(element)``,
+       but is suppressed when using ``iter(element)``.
+
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
     chain_linker = None
     #: special return value for :py:meth:`send` to abort further traversal of a chain
-    stop_traversal = utility.Sentinel('End Of Chain Traversal')
+    stop_traversal = utility.Sentinel('END OF CHAIN')
     #: whether this element processes several data chunks at once
     chain_join = False
     #: whether this element produces several data chunks at once
@@ -111,7 +122,11 @@ class ChainLink(object):
         return self >> children
 
     def __iter__(self):
-        return self
+        stop_traversal = self.stop_traversal
+        while True:
+            next_value = next(self)
+            if next_value is not stop_traversal:
+                yield next_value
 
     def __next__(self):
         return self.send(None)
