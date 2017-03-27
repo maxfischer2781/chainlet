@@ -20,6 +20,12 @@ class WrapperMixin(object):
     def __init__(self, slave):
         super(WrapperMixin, self).__init__()
         self.__wrapped__ = slave
+        # inherit settings from slave
+        for attr in ('chain_join', 'chain_fork'):
+            try:
+                setattr(self, attr, getattr(self, attr))
+            except AttributeError:
+                pass
 
     @property
     def slave(self):
