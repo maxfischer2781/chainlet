@@ -49,7 +49,6 @@ class GeneratorLink(unittest.TestCase):
             with self.assertRaises(StopIteration):
                 next(genlet.slave)  # underlying resource is closed
 
-
     def test_linklet(self):
         """Chainlink via decorator"""
         @chainlet.genlet
