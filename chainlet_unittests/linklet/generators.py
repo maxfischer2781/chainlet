@@ -39,6 +39,7 @@ class GeneratorLink(unittest.TestCase):
                 self.assertEqual(genlet.send(value), value)
                 self.assertIsNone(next(genlet))
                 self.assertEqual(genlet.send(value), value)
+                self.assertEqual(genlet.send(value), genlet.slave.send(value))  # genlet works like generator
         with self.subTest(case='chain element'):
             chain = NamedChainlet('start') >> pingpong() >> NamedChainlet('stop')
             for value in test_values:
