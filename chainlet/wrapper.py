@@ -23,7 +23,7 @@ class WrapperMixin(object):
         # inherit settings from slave
         for attr in ('chain_join', 'chain_fork'):
             try:
-                setattr(self, attr, getattr(self, attr))
+                setattr(self, attr, getattr(slave, attr))
             except AttributeError:
                 pass
 
