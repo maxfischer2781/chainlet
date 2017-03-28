@@ -24,6 +24,32 @@ class GeneratorLink(unittest.TestCase):
                 with self.assertRaises(StopIteration):
                     next(link)
 
+    def test_close(self):
+        """Release underlying generator"""
+        @chainlet.genlet
+        def pingpong():
+            last = yield
+            while True:
+                last = yield last
+
+        with self.subTest(case='close'):
+            genlet = pingpong()
+            genlet.close()
+            with self.assertRaises(StopIteration):
+                next(genlet)
+            with self.assertRaises(StopIteration):
+                next(genlet.slave)  # underlying resource is closed
+
+        with self.subTest(case='throw'):
+            genlet = pingpong()
+            with self.assertRaises(GeneratorExit):
+                genlet.throw(GeneratorExit)
+            with self.assertRaises(StopIteration):
+                next(genlet)
+            with self.assertRaises(StopIteration):
+                next(genlet.slave)  # underlying resource is closed
+
+
     def test_linklet(self):
         """Chainlink via decorator"""
         @chainlet.genlet
