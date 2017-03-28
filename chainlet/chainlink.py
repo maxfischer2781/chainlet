@@ -232,21 +232,21 @@ class MetaChain(ParallelChain):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
         for element in self.elements:
-            stop_traversal = element.stop_traversal
             # aggregate input for joining paths, flatten output of parallel paths
             if element.chain_join and element.chain_fork:
-                values = [retval for retval in element.send(values) if retval is not stop_traversal]
+                values = element.send(values)
             # flatten output of parallel paths for each input
             elif not element.chain_join and element.chain_fork:
-                values = [retval for value in values for retval in element.send(value) if retval is not stop_traversal]
+                values = [retval for value in values for retval in element.send(value)]
             # neither fork nor join, unwrap input and output
             elif not element.chain_join:
+                stop_traversal = element.stop_traversal
                 values = [
                     retval for retval in (element.send(value) for value in values) if retval is not stop_traversal
                 ]
             else:
                 values = [element.send(values)]
-                if values[0] == stop_traversal:
+                if values[0] is element.stop_traversal:
                     values = []
         return values
 
