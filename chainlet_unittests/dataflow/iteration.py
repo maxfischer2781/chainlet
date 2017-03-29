@@ -10,7 +10,7 @@ class ChainIteration(unittest.TestCase):
         elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
         for elements in itertools.product(elements, repeat=2):
             with self.subTest(elements=elements):
-                initials = (0, 15, -15, -1E6, +1E6)
+                initials = (0, 15, -15, 200, -200, -1E6, +1E6)
                 expected = [initial + sum(element.value for element in elements) for initial in initials]
                 a, b = elements
 
@@ -32,10 +32,15 @@ class ChainIteration(unittest.TestCase):
                 return chain_factory() >> abort_swallow()
             self._test_iter_one(factory_swallow, [])
 
-        with self.subTest(case='AbortEvery'):
+        with self.subTest(case='AbortEvery 2'):
             def factory_second():
                 return chain_factory() >> AbortEvery(2)
             self._test_iter_one(factory_second, expected[::2])
+
+        with self.subTest(case='AbortEvery 3'):
+            def factory_second():
+                return chain_factory() >> AbortEvery(3)
+            self._test_iter_one(factory_second, [val for idx, val in enumerate(expected) if (idx + 1) % 3])
 
     def _test_iter_one(self, chain_factory, expected):
         chain_list = chain_factory()
