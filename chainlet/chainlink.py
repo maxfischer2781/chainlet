@@ -11,6 +11,7 @@ END_OF_CHAIN = utility.Sentinel('END OF CHAIN')
 class StopTraversal(Exception):
     """Stop the traversal of a chain"""
     def __init__(self, return_value=END_OF_CHAIN):
+        Exception.__init__(self)
         self.return_value = return_value
 
 
@@ -137,7 +138,6 @@ class ChainLink(object):
             except StopTraversal as err:
                 if err.return_value is not END_OF_CHAIN:
                     yield err.return_value
-                pass
 
     def __next__(self):
         return self.send(None)
