@@ -146,7 +146,7 @@ class ChainLink(object):
         def next(self):
             return self.__next__()
 
-    def send(self, value=None):  # pylint: disable=no-self-use
+    def send(self, value=None):
         """Send a value to this element for processing"""
         try:
             return self.chainlet_send(value)
@@ -198,9 +198,10 @@ class LinearChain(Chain):
 
     def chainlet_send(self, value=None):
         for element in self.elements:
-            value = element.send(value)
-            if value is element.stop_traversal:
-                return self.stop_traversal
+            # a StopTraversal may be raised here
+            # we do NOT catch it, but let it bubble up instead
+            # whoever catches it can extract a potential early return value
+            value = element.chainlet_send(value)
         return value
 
     def __repr__(self):
@@ -220,12 +221,19 @@ class ParallelChain(Chain):
     def _send_iter(self, value):
         for element in self.elements:
             if element.chain_fork:
-                for val in element.send(value):
+                for val in element.chainlet_send(value):
                     yield val
             else:
-                val = element.send(value)
-                if val is not element.stop_traversal:
-                    yield val
+                # this is a bit judgement call - MF@20170329
+                # either we
+                # - catch StopTraversal and return, but that means further elements will still get it
+                # - we suppress StopTraversal, denying any return_value
+                # - we return the Exception, which means later elements must check/filter it
+                try:
+                    yield element.chainlet_send(value)
+                except StopTraversal as err:
+                    if err.return_value is not END_OF_CHAIN:
+                        yield err.return_value
 
     def __repr__(self):
         return repr(self.elements)
