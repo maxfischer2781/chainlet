@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import chainlet
 
 
@@ -18,3 +18,21 @@ class Adder(NamedChainlet):
 
     def send(self, value=None):
         return value + self.value
+
+
+class Buffer(chainlet.ChainLink):
+    def __init__(self):
+        self.buffer = []
+
+    def send(self, value=None):
+        self.buffer.append(value)
+        return value
+
+    def __repr__(self):
+        return '<%s>' % self.buffer
+
+
+@chainlet.genlet(prime=False)
+def produce(iterable):
+    for element in iterable:
+        yield element
