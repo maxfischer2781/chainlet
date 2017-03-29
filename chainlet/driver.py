@@ -1,10 +1,8 @@
 from __future__ import division, absolute_import
 import threading
 
-from . import chainlink
 
-
-class ChainDriver(chainlink.ChainLink):
+class ChainDriver(object):
     """
     Actively drives chains by pulling them
 
@@ -12,7 +10,6 @@ class ChainDriver(chainlink.ChainLink):
     synchronously, but blocks all chains if any individual chain blocks.
     """
     def __init__(self):
-        super(ChainDriver, self).__init__()
         self.mounts = []
         self._run_lock = threading.Lock()
         self._run_thread = None
