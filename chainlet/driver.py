@@ -93,5 +93,5 @@ class ThreadedChainDriver(ChainDriver):
         try:
             while True:
                 next(mount)
-        except IndexError:
+        except StopIteration:
             self.mounts.remove(mount)

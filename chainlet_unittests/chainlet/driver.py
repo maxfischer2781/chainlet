@@ -33,3 +33,6 @@ class DriverMixin(object):
 class TestChainDriver(DriverMixin, unittest.TestCase):
     driver_class = chainlet.driver.ChainDriver
 
+
+class TestThreadedChainDriver(DriverMixin, unittest.TestCase):
+    driver_class = chainlet.driver.ThreadedChainDriver
