@@ -5,6 +5,15 @@ from .compat import throw_method as _throw_method
 from . import utility
 
 
+END_OF_CHAIN = utility.Sentinel('END OF CHAIN')
+
+
+class StopTraversal(Exception):
+    """Stop the traversal of a chain"""
+    def __init__(self, return_value=END_OF_CHAIN):
+        self.return_value = return_value
+
+
 class ChainLink(object):
     r"""
     BaseClass for elements in a chain
@@ -122,11 +131,13 @@ class ChainLink(object):
         return self >> children
 
     def __iter__(self):
-        stop_traversal = self.stop_traversal
         while True:
-            next_value = next(self)
-            if next_value is not stop_traversal:
-                yield next_value
+            try:
+                yield self.chainlet_send(None)
+            except StopTraversal as err:
+                if err.return_value is not END_OF_CHAIN:
+                    yield err.return_value
+                pass
 
     def __next__(self):
         return self.send(None)
@@ -137,7 +148,16 @@ class ChainLink(object):
 
     def send(self, value=None):  # pylint: disable=no-self-use
         """Send a value to this element for processing"""
-        return value
+        try:
+            return self.chainlet_send(value)
+        except StopTraversal as err:
+            if err.return_value is not END_OF_CHAIN:
+                return err.return_value
+            raise
+
+    def chainlet_send(self, value=None):  # pylint: disable=no-self-use
+        """Send a value to this element for processing"""
+        raise NotImplementedError
 
     throw = _throw_method
 
@@ -165,7 +185,7 @@ class Chain(ChainLink):
     def __hash__(self):
         return hash(self.elements)
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         raise NotImplementedError
 
 
@@ -176,7 +196,7 @@ class LinearChain(Chain):
     chain_join = False
     chain_fork = False
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         for element in self.elements:
             value = element.send(value)
             if value is element.stop_traversal:
@@ -194,7 +214,7 @@ class ParallelChain(Chain):
     chain_join = False
     chain_fork = True
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         return type(self.elements)(self._send_iter(value))
 
     def _send_iter(self, value):
@@ -228,7 +248,7 @@ class MetaChain(ParallelChain):
                 _elements_buffer.append(element)
         super(MetaChain, self).__init__(tuple(elements))
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
         for element in self.elements:

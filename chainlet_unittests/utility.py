@@ -7,6 +7,11 @@ class NamedChainlet(chainlet.ChainLink):
     def __init__(self, name):
         self.name = name
 
+    @staticmethod
+    def chainlet_send(value=None):  # pylint: disable=no-self-use
+        """Send a value to this element for processing"""
+        return value
+
     def __repr__(self):
         return '%s' % self.name
 
@@ -16,7 +21,7 @@ class Adder(NamedChainlet):
         NamedChainlet.__init__(self, name='%+d' % value)
         self.value = value
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         return value + self.value
 
 
@@ -24,7 +29,7 @@ class Buffer(chainlet.ChainLink):
     def __init__(self):
         self.buffer = []
 
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         self.buffer.append(value)
         return value
 

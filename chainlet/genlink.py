@@ -64,10 +64,7 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
         if prime:
             next(self.__wrapped__)
 
-    def __next__(self):
-        return next(self.__wrapped__)
-
-    def send(self, value=None):
+    def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
         return self.__wrapped__.send(value)
 
