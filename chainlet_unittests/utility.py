@@ -2,15 +2,10 @@ from __future__ import absolute_import, division, print_function
 import chainlet
 
 
-class NamedChainlet(chainlet.ChainLink):
+class NamedChainlet(chainlet.NoOp):
     """Chainlet with nice representation"""
     def __init__(self, name):
         self.name = name
-
-    @staticmethod
-    def chainlet_send(value=None):  # pylint: disable=no-self-use
-        """Send a value to this element for processing"""
-        return value
 
     def __repr__(self):
         return '%s' % self.name

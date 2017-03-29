@@ -155,9 +155,9 @@ class ChainLink(object):
                 return err.return_value
             raise
 
-    def chainlet_send(self, value=None):  # pylint: disable=no-self-use
+    def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
-        raise NotImplementedError
+        raise NotImplementedError  # overwrite in subclasses
 
     throw = _throw_method
 
