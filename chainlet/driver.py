@@ -28,21 +28,21 @@ class ChainDriver(chainlink.ChainLink):
 
     def start(self, daemon=True):
         """
-        Start driving the chain, return immediately
+        Start driving the chain asynchronously, return immediately
 
         :param daemon: ungracefully kill the driver when the program terminates
         :type daemon: bool
-        :raises RuntimeError: if the driver is already running
         """
         if self._run_lock.acquire(False):
             try:
-                self._run_thread = threading.Thread(target=self._run_in_thread)
-                self._run_thread.daemon = daemon
-                self._run_thread.start()
+                # there is a short race window in which `start` release the lock,
+                # but `run` has not picked it up yet, but the thread exists anyway
+                if self._run_thread is None:
+                    self._run_thread = threading.Thread(target=self._run_in_thread)
+                    self._run_thread.daemon = daemon
+                    self._run_thread.start()
             finally:
                 self._run_lock.release()
-        else:
-            raise RuntimeError("ChainDriver already active")
 
     def _run_in_thread(self):
         try:

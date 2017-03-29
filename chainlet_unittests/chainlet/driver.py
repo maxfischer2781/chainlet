@@ -29,6 +29,7 @@ class DriverMixin(object):
                     results.append([expected, buffer])
                 if run_async:
                     driver.start()
+                    driver.start()  # starting multiple times is allowed
                     time.sleep(0.1)  # let the driver startup
                     while driver.running:
                         time.sleep(0.1)
