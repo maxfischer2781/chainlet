@@ -138,6 +138,8 @@ class ChainLink(object):
             except StopTraversal as err:
                 if err.return_value is not END_OF_CHAIN:
                     yield err.return_value
+            except StopIteration:
+                break
 
     def __next__(self):
         return self.send(None)
@@ -148,12 +150,19 @@ class ChainLink(object):
 
     def send(self, value=None):
         """Send a value to this element for processing"""
+        # we do one explicit loop to keep overhead low...
         try:
             return self.chainlet_send(value)
         except StopTraversal as err:
             if err.return_value is not END_OF_CHAIN:
                 return err.return_value
-            raise
+            # ...then do the correct loop if needed
+            while True:
+                try:
+                    return self.chainlet_send(value)
+                except StopTraversal as err:
+                    if err.return_value is not END_OF_CHAIN:
+                        return err.return_value
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
