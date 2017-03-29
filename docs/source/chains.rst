@@ -5,7 +5,7 @@ Chains created via :py:mod:`chainlet` have two operation modes [#mode]_:
 pulling at the end of the chain, and pushing to the top of the chain.
 The only difference is whether the chain is given an input, or produces it by itself.
 
-.. code::
+.. code:: python
 
     chain = chainlet1 >> chainlet2 >> chainlet3
     print(next(chain))  # pull from chain
@@ -39,7 +39,7 @@ Whether pulling, pushing or both is *sensible* depends on the element - it canno
 Elements that work in pull mode can also be used in iteration.
 For every iteration step, ``next(element)`` is called to produce a value.
 
-.. code::
+.. code:: python
 
     for value in element:
         print(value)

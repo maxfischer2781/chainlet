@@ -71,7 +71,7 @@ Links follow standard operation order, i.e. they are evaluated from left to righ
 This can be confusing when mixing ``>>`` and ``<<`` in a single chain.
 The following chain is equivalent to ``chain_c``.
 
-.. code::
+.. code:: python
 
     chain_d = child << parent >> child2 << parent2
 
@@ -82,7 +82,7 @@ Any node can have an arbitrary number of parents and children.
 This allows forking and joining elements.
 Simply use a :py:func:`tuple`, :py:func:`list` or :py:func:`set` as child or parent.
 
-.. code::
+.. code:: python
 
     fork_chain = a >> (b >> c, d)
     join_chain = (a, b >> c) >> d
@@ -108,7 +108,7 @@ The resulting chains are actually fully featured, directed graphs.
 Links are agnostic with regard to *how* a group of elements is created.
 This allows you to use comprehensions and calls to generate forks and joins dynamically.
 
-.. code::
+.. code:: python
 
     a >> {node(idx) for idx in range(3)}
 
