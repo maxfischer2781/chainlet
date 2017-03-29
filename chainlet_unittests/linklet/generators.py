@@ -77,3 +77,27 @@ class GeneratorLink(unittest.TestCase):
                 self.assertEqual(chain.send(value), value)
                 self.assertIsNone(next(chain))
                 self.assertEqual(chain.send(value), value)
+
+    def test_prime_linklet(self):
+        """Prime genlet for use"""
+        for prime in (True, False):
+            with self.subTest(prime=prime):
+                @chainlet.genlet(prime)
+                def prime_arg():
+                    primer = yield
+                    yield primer
+
+                @chainlet.genlet(prime=prime)
+                def prime_kwarg():
+                    primer = yield
+                    yield primer
+
+                for genlet in (prime_arg, prime_kwarg):
+                    link = genlet()
+                    # explicitly prime for use
+                    if not prime:
+                        self.assertIsNone(next(link))
+                    self.assertEqual(link.send('pingpong'), 'pingpong')
+                    # make sure generator has ended
+                    with self.assertRaises(StopIteration):
+                        next(link)
