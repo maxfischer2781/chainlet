@@ -80,16 +80,43 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
         return self.__wrapped__.close()
 
 
-def genlet(generator_function):
+def genlet(generator_function=None, prime=True):
     """
-    Convert a generator function to a :py:class:`~chainlink.ChainLink`
+    Decorator to convert a generator function to a :py:class:`~chainlink.ChainLink`
+
+    :param generator_function: the generator function to convert
+    :type generator_function: generator
+    :param prime: advance the generator to the next/first yield
+    :type prime: bool
+
+    When used as a decorator, this function can also be called with keywords.
+
+    .. code:: python
+
+        @genlet
+        def pingpong():
+            "Chainlet that passes on its value"
+            last = yield
+            while True:
+                last = yield last
+
+        @genlet(prime=True)
+        def produce():
+            "Chainlet that produces a value"
+            while True:
+                yield time.time()
     """
+    if generator_function is None:
+        return functools.partial(genlet, prime=prime)
+    elif isinstance(generator_function, bool):
+        return functools.partial(genlet, prime=generator_function)
+
     def linker(*args, **kwargs):
         """
         Creates a new generator instance acting as a chainlet.ChainLink
 
         :rtype: :py:class:`~chainlink.ChainLink`
         """
-        return GeneratorLink(generator_function(*args, **kwargs))
+        return GeneratorLink(generator_function(*args, **kwargs), prime=prime)
     functools.update_wrapper(linker, generator_function)
     return linker
