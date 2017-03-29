@@ -65,7 +65,7 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
         self._wrapped_kwargs = kwargs
 
     def __next__(self):
-        return self.__wrapped__(*self._wrapped_args, **self._wrapped_kwargs)
+        return self.__wrapped__(value=None, *self._wrapped_args, **self._wrapped_kwargs)
 
     def send(self, value=None):
         """Send a value to this element"""
