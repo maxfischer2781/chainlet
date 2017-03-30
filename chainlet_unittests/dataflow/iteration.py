@@ -6,7 +6,7 @@ from chainlet_unittests.utility import Adder, produce, abort_return, abort_swall
 
 class ChainIteration(unittest.TestCase):
     def test_pair(self):
-        """Iter single link chain as `parent >> child`"""
+        """Iter single link chain as `parent >> child` => [1, 2, ...]"""
         elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
         for elements in itertools.product(elements, repeat=2):
             with self.subTest(elements=elements):
@@ -18,7 +18,36 @@ class ChainIteration(unittest.TestCase):
                     return produce(initials) >> a >> b
                 self._test_iter(factory, expected)
 
-    def _test_iter(self, chain_factory, expected):
+    def test_multi(self):
+        """Iter multi link chain as `a >> b >> c >> ...` => [1, 2, ...]"""
+        elements = [Adder(val) for val in (0, -2, -1E6)]
+        for elements in itertools.product(elements, repeat=5):
+            with self.subTest(elements=elements):
+                initials = (0, 15, -15, -1E6, +1E6)
+                expected = [initial + sum(element.value for element in elements) for initial in initials]
+                a, b, c, d, e = elements
+
+                def factory():
+                    return produce(initials) >> a >> b >> c >> d >> e
+                self._test_iter(factory, expected)
+
+    def test_fork(self):
+        """Push fork link chain as `a >> (b, c)` => [[1a, 1b], ...]"""
+        elements = [Adder(val) for val in (0, -2, -1E6)]
+        for elements in itertools.product(elements, repeat=3):
+            with self.subTest(elements=elements):
+                a, b, c = elements
+                initials = (0, 15, -15, -1E6, +1E6)
+                expected = [
+                    [initial + a.value + b.value, initial + a.value + c.value]
+                    for initial in initials
+                ]
+
+                def factory():
+                    return produce(initials) >> a >> (b, c)
+                self._test_iter(factory, expected, parallel=True)
+
+    def _test_iter(self, chain_factory, expected, parallel=False):
         with self.subTest(case='plain'):
             self._test_iter_one(chain_factory, expected)
 
@@ -32,25 +61,26 @@ class ChainIteration(unittest.TestCase):
                 return chain_factory() >> abort_swallow()
             self._test_iter_one(factory_swallow, [])
 
-        with self.subTest(case='AbortEvery 2'):
-            def factory_second():
-                return chain_factory() >> AbortEvery(2)
-            self._test_iter_one(factory_second, expected[::2])
+        if not parallel:
+            with self.subTest(case='AbortEvery 2'):
+                def factory_second():
+                    return chain_factory() >> AbortEvery(2)
+                self._test_iter_one(factory_second, expected[::2])
 
-        with self.subTest(case='AbortEvery 3'):
-            def factory_second():
-                return chain_factory() >> AbortEvery(3)
-            self._test_iter_one(factory_second, [val for idx, val in enumerate(expected) if (idx + 1) % 3])
+            with self.subTest(case='AbortEvery 3'):
+                def factory_second():
+                    return chain_factory() >> AbortEvery(3)
+                self._test_iter_one(factory_second, [val for idx, val in enumerate(expected) if (idx + 1) % 3])
 
-        with self.subTest(case='ReturnEvery 2'):
-            def factory_second():
-                return chain_factory() >> ReturnEvery(2)
-            self._test_iter_one(factory_second, expected[::2])
+            with self.subTest(case='ReturnEvery 2'):
+                def factory_second():
+                    return chain_factory() >> ReturnEvery(2)
+                self._test_iter_one(factory_second, expected[::2])
 
-        with self.subTest(case='ReturnEvery 3'):
-            def factory_second():
-                return chain_factory() >> ReturnEvery(3)
-            self._test_iter_one(factory_second, expected[::3])
+            with self.subTest(case='ReturnEvery 3'):
+                def factory_second():
+                    return chain_factory() >> ReturnEvery(3)
+                self._test_iter_one(factory_second, expected[::3])
 
     def _test_iter_one(self, chain_factory, expected):
         chain_list = chain_factory()
@@ -66,16 +96,3 @@ class ChainIteration(unittest.TestCase):
         expect_next = iter(expected)
         for _ in range(len(expected)):
             self.assertEqual(next(chain_next), next(expect_next))
-
-    def test_multi(self):
-        """Iter multi link chain as `a >> b >> c >> ...`"""
-        elements = [Adder(val) for val in (0, -2, -1E6)]
-        for elements in itertools.product(elements, repeat=5):
-            with self.subTest(elements=elements):
-                initials = (0, 15, -15, -1E6, +1E6)
-                expected = [initial + sum(element.value for element in elements) for initial in initials]
-                a, b, c, d, e = elements
-
-                def factory():
-                    return produce(initials) >> a >> b >> c >> d >> e
-                self._test_iter(factory, expected)
