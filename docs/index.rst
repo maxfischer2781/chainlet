@@ -54,3 +54,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+----------
+
+Documentation built from chainlet |version| at |today|.
