@@ -244,6 +244,27 @@ class ParallelChain(Chain):
                     if err.return_value is not END_OF_CHAIN:
                         yield err.return_value
 
+    def __iter__(self):
+        while True:
+            try:
+                result = self.chainlet_send(None)
+                if result:
+                    yield result
+            except StopIteration:
+                break
+
+    def send(self, value=None):
+        """Send a value to this element for processing"""
+        # we do one explicit loop to keep overhead low...
+        result = self.chainlet_send(None)
+        if result:
+            return result
+        # ...then do the correct loop if needed
+        while True:
+            result = self.chainlet_send(None)
+            if result:
+                return result
+
     def __repr__(self):
         return repr(self.elements)
 
@@ -271,21 +292,60 @@ class MetaChain(ParallelChain):
         for element in self.elements:
             # aggregate input for joining paths, flatten output of parallel paths
             if element.chain_join and element.chain_fork:
-                values = element.send(values)
+                values = self._send_n_to_m(element, values)
             # flatten output of parallel paths for each input
             elif not element.chain_join and element.chain_fork:
-                values = [retval for value in values for retval in element.send(value)]
+                values = self._send_1_to_m(element, values)
             # neither fork nor join, unwrap input and output
-            elif not element.chain_join:
-                stop_traversal = element.stop_traversal
-                values = [
-                    retval for retval in (element.send(value) for value in values) if retval is not stop_traversal
-                ]
+            elif not element.chain_join and not element.chain_fork:
+                values = self._send_1_to_1(element, values)
+            elif element.chain_join and not element.chain_fork:
+                values = self._send_n_to_1(element, values)
             else:
-                values = [element.send(values)]
-                if values[0] is element.stop_traversal:
-                    values = []
+                raise NotImplementedError
+            print(values)
+            if not values:
+                break
         return values
+
+    @staticmethod
+    def _send_n_to_m(element, values):
+        # aggregate input for joining paths, flatten output of parallel paths
+        return element.chainlet_send(values)
+
+    @staticmethod
+    def _send_1_to_m(element, values):
+        # flatten output of parallel paths for each input
+        return_values = []
+        for value in values:
+            try:
+                return_values.extend(element.chainlet_send(value))
+            except StopTraversal as err:
+                if err.return_value is not END_OF_CHAIN:
+                    return_values.extend(err.return_value)
+        return return_values
+
+    @staticmethod
+    def _send_n_to_1(element, values):
+        # aggregate input for joining paths
+        try:
+            return [element.chainlet_send(values)]
+        except StopTraversal as err:
+            if err.return_value is not END_OF_CHAIN:
+                return [err.return_value]
+            return []
+
+    @staticmethod
+    def _send_1_to_1(element, values):
+        # unpack input, pack output
+        return_values = []
+        for value in values:
+            try:
+                return_values.append(element.chainlet_send(value))
+            except StopTraversal as err:
+                if err.return_value is not END_OF_CHAIN:
+                    return_values.append(err.return_value)
+        return return_values
 
     def __repr__(self):
         return ' >> '.join(repr(elem) for elem in self.elements)
