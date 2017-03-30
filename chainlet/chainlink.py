@@ -256,12 +256,12 @@ class ParallelChain(Chain):
     def send(self, value=None):
         """Send a value to this element for processing"""
         # we do one explicit loop to keep overhead low...
-        result = self.chainlet_send(None)
+        result = self.chainlet_send(value)
         if result:
             return result
         # ...then do the correct loop if needed
         while True:
-            result = self.chainlet_send(None)
+            result = self.chainlet_send(value)
             if result:
                 return result
 
@@ -303,7 +303,6 @@ class MetaChain(ParallelChain):
                 values = self._send_n_to_1(element, values)
             else:
                 raise NotImplementedError
-            print(values)
             if not values:
                 break
         return values
