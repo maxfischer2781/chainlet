@@ -7,9 +7,9 @@ from chainlet_unittests.utility import Adder
 class ChainNested(unittest.TestCase):
     def test_multi(self):
         """Push nested fork as `a >> (b,  c >> (d, e >> ...`"""
-        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        elements = [Adder(val) for val in (0, -2, -1E6)]
         for elements in itertools.product(elements, repeat=6):
-            for initial in (0, 15, -15, -1E6, +1E6):
+            for initial in (0, -15, +1E6):
                 with self.subTest(chain=elements, initial=initial):
                     a, b, c, d, e, f = elements
                     chain_a = a >> (b, c >> (d, e >> f))
