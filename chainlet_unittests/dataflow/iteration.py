@@ -45,12 +45,12 @@ class ChainIteration(unittest.TestCase):
         with self.subTest(case='ReturnEvery 2'):
             def factory_second():
                 return chain_factory() >> ReturnEvery(2)
-            self._test_iter_one(factory_second, expected[1::2])
+            self._test_iter_one(factory_second, expected[::2])
 
         with self.subTest(case='ReturnEvery 3'):
             def factory_second():
                 return chain_factory() >> ReturnEvery(3)
-            self._test_iter_one(factory_second, expected[2::3])
+            self._test_iter_one(factory_second, expected[::3])
 
     def _test_iter_one(self, chain_factory, expected):
         chain_list = chain_factory()

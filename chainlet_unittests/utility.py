@@ -35,21 +35,29 @@ class Buffer(chainlet.ChainLink):
 
 @chainlet.genlet(prime=False)
 def produce(iterable):
+    """Produce values from an iterable for a chain"""
     for element in iterable:
         yield element
 
 
 @chainlet.funclet
 def abort_return(value):
+    """Always return input by aborting the chain"""
     raise chainlet.chainlink.StopTraversal(value)
 
 
 @chainlet.funclet
 def abort_swallow(value):
+    """Always abort the chain without returning"""
     raise chainlet.chainlink.StopTraversal
 
 
 class AbortEvery(chainlet.ChainLink):
+    """
+    Abort every n'th traversal of the chain
+
+    This returns its input for calls 1, ..., n-1, then raise StopTraversal on n.
+    """
     def __init__(self, every=2):
         super(AbortEvery, self).__init__()
         self.every = every
@@ -63,13 +71,19 @@ class AbortEvery(chainlet.ChainLink):
 
 
 class ReturnEvery(chainlet.ChainLink):
+    """
+    Abort-return every n'th traversal of the chain
+
+    This abort-returns its input for call 1, then raise StopTraversal on 2, ..., n.
+    """
     def __init__(self, every=2):
         super(ReturnEvery, self).__init__()
         self.every = every
         self._count = 0
 
     def chainlet_send(self, value=None):
-        self._count += 1
         if self._count % self.every:
+            self._count += 1
             raise chainlet.chainlink.StopTraversal
+        self._count += 1
         raise chainlet.chainlink.StopTraversal(value)
