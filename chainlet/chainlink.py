@@ -114,7 +114,14 @@ class ChainLink(object):
     chain_fork = False
 
     def __rshift__(self, children):
-        # self >> children
+        """
+        self >> children
+
+        :param children: child or children to bind
+        :type children: ChainLink or iterable[ChainLink]
+        :returns: link between self and children
+        :rtype: LinearChain, ParallelChain or MetaChain
+        """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(self, children)
 
@@ -123,7 +130,14 @@ class ChainLink(object):
         return self << parents
 
     def __lshift__(self, parents):
-        # self << parent
+        """
+        self << parents
+
+        :param parents: parent or parents to bind
+        :type parents: ChainLink or iterable[ChainLink]
+        :returns: link between self and children
+        :rtype: LinearChain, ParallelChain or MetaChain
+        """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(parents, self)
 
