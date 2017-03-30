@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery
+from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery, ReturnEvery
 
 
 class ChainIteration(unittest.TestCase):
@@ -41,6 +41,16 @@ class ChainIteration(unittest.TestCase):
             def factory_second():
                 return chain_factory() >> AbortEvery(3)
             self._test_iter_one(factory_second, [val for idx, val in enumerate(expected) if (idx + 1) % 3])
+
+        with self.subTest(case='ReturnEvery 2'):
+            def factory_second():
+                return chain_factory() >> ReturnEvery(2)
+            self._test_iter_one(factory_second, expected[1::2])
+
+        with self.subTest(case='ReturnEvery 3'):
+            def factory_second():
+                return chain_factory() >> ReturnEvery(3)
+            self._test_iter_one(factory_second, expected[2::3])
 
     def _test_iter_one(self, chain_factory, expected):
         chain_list = chain_factory()

@@ -60,3 +60,16 @@ class AbortEvery(chainlet.ChainLink):
         if self._count % self.every:
             return value
         raise chainlet.chainlink.StopTraversal
+
+
+class ReturnEvery(chainlet.ChainLink):
+    def __init__(self, every=2):
+        super(ReturnEvery, self).__init__()
+        self.every = every
+        self._count = 0
+
+    def chainlet_send(self, value=None):
+        self._count += 1
+        if self._count % self.every:
+            raise chainlet.chainlink.StopTraversal
+        raise chainlet.chainlink.StopTraversal(value)
