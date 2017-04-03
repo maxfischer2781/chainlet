@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/maxfischer2781/chainlet/branch/master/graph/badge.svg)](https://codecov.io/gh/maxfischer2781/chainlet)
 
 Framework for linking generator/iterators to create processing chains and pipelines.
-With its operator based syntax, one may build complex sequences from simple building blocks.
+With its operator based syntax, it is easy to create complex sequences from simple building blocks.
 Chainlets are suitable for incremental, iterative and stream processing and beyond.
 
 ## Simplistic Chains with Chainlets
@@ -21,6 +21,9 @@ When written using chainlets, generator sequence and arguments are much easier t
 The chainlets are joined using the `>>` operator:
 
     xml_reader(path='data.xml') >> flatten(join='.'.join) >> csv_writer(path='data.csv')
+
+In addition, chainlets can be composed much more freely.
+Instead of deeply nested call structures, chainlets have simple, flat call sequences.
 
 ## Extended Pipelines with Chainlets
 
@@ -39,3 +42,9 @@ The following example reads XML messages via UDP, and logs them in two different
 * Generate awesome *generator* pipelines, and let `GeneratorLink` put that awesome into use
 * State is for wusses, real programmers use functions; real programmers use `FunctionLink`
 * Don't wrap your head with wrappers, wrap with decorators - `linklet` and let link
+
+## Tell me more!
+
+Chainlets are simple at their core, and quick to understand.
+If you want to know more, just read the fabulous manual:
+[![Documentation Status](https://readthedocs.org/projects/chainlet/badge/?version=latest)](http://chainlet.readthedocs.io/en/latest/?badge=latest)

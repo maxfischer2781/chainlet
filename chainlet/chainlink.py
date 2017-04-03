@@ -51,8 +51,8 @@ class ChainLink(object):
 
        Bind ``parent_a``, ``parent_b``, etc. as parents of ``child``.
 
-    Aside from binding, every :py:class:`ChainLink` should implement the
-    `Generator-Iterator Methods`_ interface as applicable:
+    Aside from binding, every :py:class:`ChainLink` implements the
+    `Generator-Iterator Methods`_ interface:
 
     .. method:: link.__next__()
                 link.send(None)
@@ -64,10 +64,20 @@ class ChainLink(object):
 
        Process a data ``chunk``, and return the result.
 
+    .. method:: link.chainlet_send(chunk)
+
+       Process a data ``chunk`` locally, and return the result.
+
+       This method implements data processing in an element; subclasses must
+       overwrite it to define how they handle data.
+
+       This method should only be called to explicitly traverse elements in a chain.
+       Client code should use ``next(link)`` and ``link.send(chunk)`` instead.
+
     .. method:: link.throw(type[, value[, traceback]])
 
        Raises an exception of ``type`` inside the link. The link may either
-       return a final result, raise :py:exc:`StopIteration` if there are no
+       return a final result (including :py:const:`None`), raise :py:exc:`StopIteration` if there are no
        more results, or propagate any other, unhandled exception.
 
     .. method:: link.close()
@@ -93,8 +103,8 @@ class ChainLink(object):
        each of which should be passed on independently.
 
     To prematurely stop the traversal of a chain, `1 -> n` and `n -> m` elements should
-    return an empty container. Any `1 -> 1` and `n -> 1` element can define a
-    special return value that stops traversal.
+    return an empty container. Any `1 -> 1` and `n -> 1` element must raise
+    :py:exc:`StopTraversal`.
 
     .. py:attribute:: stop_traversal
 
