@@ -1,6 +1,11 @@
 from __future__ import absolute_import, division
+import itertools
+import collections
+import weakref
+import numbers
 
 from . import chainlink
+from .compat import collections_abc
 
 
 class NoOp(chainlink.ChainLink):
@@ -43,3 +48,80 @@ def forklet(chainlet):
     """
     chainlet.chain_fork = True
     return chainlet
+
+
+def merge_numerical(base_value, iter_values):
+    return sum(iter_values, base_value)
+
+
+def merge_iterable(base_value, iter_values):
+    """
+    Merge flat iterables from an iterable
+
+    :param base_value: base value to merge into
+    :param iter_values: values to merge
+    :return: merged iterable
+    """
+    return type(base_value)(itertools.chain(base_value, *iter_values))
+
+
+def merge_mappings(base_value, iter_values):
+    """
+    Merge mappings from an iterable
+
+    :param base_value: base value to merge into
+    :type base_value: dict
+    :param iter_values: values to merge
+    :type iter_values: iterable[dict]
+    :return: merged mapping
+    :rtype: dict
+    """
+    for element in iter_values:
+        base_value.update(element)
+    return base_value
+
+
+class MergeLink(chainlink.ChainLink):
+    """
+    Element that joins the data flow by merging individual data chunks
+    """
+    chain_join = True
+    chain_fork = False
+
+    #: type specific merge function mapping of the form ``(type, merger)``
+    default_merger = [
+        (numbers.Number, merge_numerical),
+        (collections_abc.MutableSequence, merge_iterable),
+        (collections_abc.MutableSet, merge_iterable),
+        (collections_abc.MutableMapping, merge_mappings),
+    ]
+
+    def __init__(self, cache_size=3):
+        self._cache_lifetime = collections.deque(maxlen=cache_size)
+        self._cache_mapping = weakref.WeakValueDictionary()
+
+    def chainlet_send(self, value=None):
+        iter_values = iter(value)
+        try:
+            base_value = next(iter_values)
+        except StopIteration:
+            raise chainlink.END_OF_CHAIN
+        sample_type = type(base_value)
+        try:
+            merger = self._cache_mapping[sample_type]
+        except KeyError:
+            self._cache_mapping[sample_type] = merger = self._get_merger(sample_type)
+        return merger(base_value, iter_values)
+
+    def _get_merger(self, value_type):
+        for merger_type, merger in self.default_merger:
+            if issubclass(value_type, merger_type):
+                return merger
+        raise ValueError('No compatible merger for %s' % value_type)
+
+try:
+    counter_type = collections.Counter
+except AttributeError:
+    pass
+else:
+    MergeLink.default_merger.insert(1, (counter_type, merge_numerical))
