@@ -17,3 +17,29 @@ class NoOp(chainlink.ChainLink):
     """
     def chainlet_send(self, value=None):
         return value
+
+
+def joinlet(chainlet):
+    """
+    Decorator to mark a chainlet as joining
+
+    :param chainlet: a chainlet to mark as joining
+    :type chainlet: chainlink.ChainLink
+    :return: the chainlet modified inplace
+    :rtype: chainlink.ChainLink
+    """
+    chainlet.chain_join = True
+    return chainlet
+
+
+def forklet(chainlet):
+    """
+    Decorator to mark a chainlet as forking
+
+    :param chainlet: a chainlet to mark as forking
+    :type chainlet: chainlink.ChainLink
+    :return: the chainlet modified inplace
+    :rtype: chainlink.ChainLink
+    """
+    chainlet.chain_fork = True
+    return chainlet
