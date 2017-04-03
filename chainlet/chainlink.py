@@ -15,6 +15,10 @@ class StopTraversal(Exception):
         self.return_value = return_value
 
 
+class _ElementExhausted(Exception):
+    """An element has not more values to produce"""
+
+
 class ChainLink(object):
     r"""
     BaseClass for elements in a chain
@@ -241,32 +245,12 @@ class LinearChain(Chain):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class ParallelChain(Chain):
+class ConcurrentChain(Chain):
     """
-    A parallel sequence of chainlets, with each element ranked the same
+    A collection of concurrent chainlets, with multiple elements running at the same time
     """
     chain_join = False
     chain_fork = True
-
-    def chainlet_send(self, value=None):
-        return type(self.elements)(self._send_iter(value))
-
-    def _send_iter(self, value):
-        for element in self.elements:
-            if element.chain_fork:
-                for val in element.chainlet_send(value):
-                    yield val
-            else:
-                # this is a bit judgement call - MF@20170329
-                # either we
-                # - catch StopTraversal and return, but that means further elements will still get it
-                # - we suppress StopTraversal, denying any return_value
-                # - we return the Exception, which means later elements must check/filter it
-                try:
-                    yield element.chainlet_send(value)
-                except StopTraversal as err:
-                    if err.return_value is not END_OF_CHAIN:
-                        yield err.return_value
 
     def __iter__(self):
         while True:
@@ -293,7 +277,50 @@ class ParallelChain(Chain):
         return repr(self.elements)
 
 
-class MetaChain(ParallelChain):
+class ParallelChain(ConcurrentChain):
+    """
+    A parallel sequence of chainlets, with each element ranked the same
+    """
+    chain_join = False
+    chain_fork = True
+
+    def chainlet_send(self, value=None):
+        try:
+            return type(self.elements)(self._send_iter(value))
+        except _ElementExhausted:
+            raise StopIteration
+
+    def _send_iter(self, value):
+        exhausted_elements = 0
+        for element in self.elements:
+            if element.chain_fork:
+                # we explicitly fetch the first item to see if the iterable is empty
+                # without forcing the consumption of all items
+                element_iter = iter(element.chainlet_send(value))
+                try:
+                    yield next(element_iter)
+                except StopIteration:
+                    exhausted_elements += 1
+                for val in element_iter:
+                    yield val
+            else:
+                # this is a bit of a judgement call - MF@20170329
+                # either we
+                # - catch StopTraversal and return, but that means further elements will still get it
+                # - we suppress StopTraversal, denying any return_value
+                # - we return the Exception, which means later elements must check/filter it
+                try:
+                    yield element.chainlet_send(value)
+                except StopTraversal as err:
+                    if err.return_value is not END_OF_CHAIN:
+                        yield err.return_value
+                except StopIteration:
+                    exhausted_elements += 1
+        if exhausted_elements and exhausted_elements == len(self.elements):
+            raise _ElementExhausted
+
+
+class MetaChain(ConcurrentChain):
     """
     A mixed sequence of linear and parallel chainlets
     """
