@@ -245,7 +245,7 @@ class LinearChain(Chain):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class ConcurrentChain(Chain):
+class ConcurrentChain(Chain):  # pylint: disable=abstract-method
     """
     A collection of concurrent chainlets, with multiple elements running at the same time
     """
