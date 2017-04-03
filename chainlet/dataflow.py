@@ -119,8 +119,8 @@ class MergeLink(chainlink.ChainLink):
         raise ValueError('No compatible merger for %s' % value_type)
 
 try:
-    counter_type = collections.Counter
+    Counter = collections.Counter
 except AttributeError:
     pass
 else:
-    MergeLink.default_merger.insert(1, (counter_type, merge_numerical))
+    MergeLink.default_merger.insert(1, (Counter, merge_numerical))
