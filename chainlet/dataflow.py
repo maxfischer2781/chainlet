@@ -5,7 +5,6 @@ import weakref
 import numbers
 
 from . import chainlink
-from .compat import collections_abc
 
 
 class NoOp(chainlink.ChainLink):
@@ -91,9 +90,9 @@ class MergeLink(chainlink.ChainLink):
     #: type specific merge function mapping of the form ``(type, merger)``
     default_merger = [
         (numbers.Number, merge_numerical),
-        (collections_abc.MutableSequence, merge_iterable),
-        (collections_abc.MutableSet, merge_iterable),
-        (collections_abc.MutableMapping, merge_mappings),
+        (collections.MutableSequence, merge_iterable),
+        (collections.MutableSet, merge_iterable),
+        (collections.MutableMapping, merge_mappings),
     ]
 
     def __init__(self, cache_size=3):
