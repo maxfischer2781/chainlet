@@ -95,9 +95,9 @@ class MergeLink(chainlink.ChainLink):
         (collections.MutableMapping, merge_mappings),
     ]
 
-    def __init__(self, cache_size=3):
-        self._cache_lifetime = collections.deque(maxlen=cache_size)
-        self._cache_mapping = weakref.WeakValueDictionary()
+    def __init__(self, *mergers):
+        self._cache_mapping = {}
+        self._custom_mergers = mergers
 
     def chainlet_send(self, value=None):
         iter_values = iter(value)
@@ -113,7 +113,7 @@ class MergeLink(chainlink.ChainLink):
         return merger(base_value, iter_values)
 
     def _get_merger(self, value_type):
-        for merger_type, merger in self.default_merger:
+        for merger_type, merger in itertools.chain(self._custom_mergers, self.default_merger):
             if issubclass(value_type, merger_type):
                 return merger
         raise ValueError('No compatible merger for %s' % value_type)
