@@ -6,6 +6,12 @@ import chainlet.dataflow
 from ..utility import produce
 
 
+try:
+    zip_longest = itertools.zip_longest
+except AttributeError:
+    zip_longest = itertools.izip_longest
+
+
 @chainlet.forklet
 @chainlet.genlet(prime=False)
 def produce_iterables(iterable):
@@ -63,5 +69,5 @@ class ChainMerging(unittest.TestCase):
                 chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
                 self.assertEqual(
                     list(chain),
-                    [[sum(elem for elem in row if elem is not None)] for row in itertools.zip_longest(*inputs)]
+                    [[sum(elem for elem in row if elem is not None)] for row in zip_longest(*inputs)]
                 )
