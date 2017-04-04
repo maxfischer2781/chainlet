@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division
 import itertools
 import collections
-import weakref
 import numbers
 
 from . import chainlink
