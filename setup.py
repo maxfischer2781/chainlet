@@ -25,6 +25,18 @@ Instead of requiring you to nest code or insert hooks, ``chainlet`` offers a con
     # chainlet pipeline
     xml_reader(path='data.xml') >> flatten(join='.'.join) >> csv_writer(path='data.csv')
 
+Creating new chainlets is simple, requiring you only to define the processing of data.
+It is usually sufficient to use regular function, generators or coroutines, and let ``chainlet`` to the rest:
+
+.. code:: python
+
+    @chainlet.genlet
+    def moving_average(window_size=8):
+        buffer = collections.deque([(yield)], maxlen=window_size)
+        while True:
+            new_value = yield(sum(buffer)/len(buffer))
+            buffer.append(new_value)
+
 Features
 ========
 

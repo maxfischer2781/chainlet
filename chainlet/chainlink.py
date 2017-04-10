@@ -33,7 +33,7 @@ class ChainLink(object):
     * A child may pull the :py:func:`next` data chunk from the parent.
 
     Chaining is done with ``>>`` and ``<<`` operators as
-    ``parent >> child`` and `child << parent`. Forking and joining of chains
+    ``parent >> child`` and ``child << parent``. Forking and joining of chains
     requires a sequence of multiple elements as parent or child.
 
     .. describe:: parent >> child

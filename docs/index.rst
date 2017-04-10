@@ -29,21 +29,33 @@ chainlet - blocks for processing chains
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.
 At its heart, it is built for chaining generators/coroutines, but supports arbitrary objects.
-It offers an easy, readable way to link elements using a simple mini language:
+It offers an easy, readable way to link elements using a concise mini language:
 
-.. code::
+.. code:: python
 
     chain = a >> b >> c >> d >> f
 
 The same interface can be used to create chains that push data from the start downwards, or to pull from the end upwards.
 
-.. code::
+.. code:: python
 
     push_chain = uppercase >> encode_r13 >> mark_of_insanity >> printer
     push_chain.send('uryyb jbeyq')  # outputs 'Hello World!!!'
 
     pull_chain = word_maker >> cleanup >> encode_r13 >> lowercase
     print(next(pull_chain))  # outputs 'uryyb jbeyq'
+
+Creating new elements is intuitive and simple, as :py:mod:`chainlet` handles all the gluing and binding for you.
+Most functionality can be created from regular functions, generators and coroutines:
+
+.. code:: python
+
+    @chainlet.genlet
+    def moving_average(window_size=8):
+        buffer = collections.deque([(yield)], maxlen=window_size)
+        while True:
+            new_value = yield(sum(buffer)/len(buffer))
+            buffer.append(new_value)
 
 If you just want to plug together existing chainlets, have a look at the :doc:`source/grammar`.
 

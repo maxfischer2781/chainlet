@@ -25,6 +25,22 @@ The chainlets are joined using the `>>` operator:
 In addition, chainlets can be composed much more freely.
 Instead of deeply nested call structures, chainlets have simple, flat call sequences.
 
+## Custom Chainlets for Pipelines
+
+Writing new chainlets does not require any special techniques or conventions.
+You can directly convert existing coroutines, functions and objects.
+Implementing a moving average requires exactly one line specific to the ``chainlet`` library:
+
+    @chainlet.genlet
+    def moving_average(window_size=8):
+        buffer = collections.deque([(yield)], maxlen=window_size)
+        while True:
+            new_value = yield(sum(buffer)/len(buffer))
+            buffer.append(new_value)
+
+All the gluing and binding is done automatically for you.
+Instead of bloating existing code, it is often easier to create and bind another simple chainlet.
+
 ## Extended Pipelines with Chainlets
 
 Chainlets are not limited to 1-to-1 relations, but actually allow n-to-n links.
@@ -33,7 +49,7 @@ The following example reads XML messages via UDP, and logs them in two different
 
     udp_digest(port=31137) >> xml_converter()  >> (
             json_writer(path='raw.json'),
-            average(window=60) >> json_writer(path='avg1m.json'),
+            moving_average(window_size=60) >> json_writer(path='avg1m.json'),
         )
 
 ## Quick Overview
