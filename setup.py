@@ -26,7 +26,7 @@ Instead of requiring you to nest code or insert hooks, ``chainlet`` offers a con
     xml_reader(path='data.xml') >> flatten(join='.'.join) >> csv_writer(path='data.csv')
 
 Creating new chainlets is simple, requiring you only to define the processing of data.
-It is usually sufficient to use regular function, generators or coroutines, and let ``chainlet`` to the rest:
+It is usually sufficient to use regular functions, generators or coroutines, and let ``chainlet`` handle the rest:
 
 .. code:: python
 
