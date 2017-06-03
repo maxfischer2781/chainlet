@@ -64,3 +64,6 @@ The following example reads XML messages via UDP, and logs them in two different
 Chainlets are simple at their core, and quick to understand.
 If you want to know more, just read the fabulous manual:
 [![Documentation Status](https://readthedocs.org/projects/chainlet/badge/?version=latest)](http://chainlet.readthedocs.io/en/latest/?badge=latest)
+
+The module is hosted on [github](https://github.com/maxfischer2781/chainlet).
+If you have issues or want to propose changes, check out the [issue tracker](https://github.com/maxfischer2781/chainlet/issues).

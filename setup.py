@@ -99,10 +99,12 @@ if __name__ == '__main__':
         # dependencies
         install_requires=[],
         # metadata for package seach
+        license='MIT',
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Intended Audience :: Developers',
             'Intended Audience :: System Administrators',
+            'License :: OSI Approved :: MIT License',
             'Topic :: System :: Monitoring',
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 2.4',
