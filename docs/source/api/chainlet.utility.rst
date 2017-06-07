@@ -1,5 +1,5 @@
-chainlet.utility module
-=======================
+chainlet\.utility module
+========================
 
 .. automodule:: chainlet.utility
     :members:

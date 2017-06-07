@@ -1,5 +1,5 @@
-chainlet.funclink module
-========================
+chainlet\.funclink module
+=========================
 
 .. automodule:: chainlet.funclink
     :members:

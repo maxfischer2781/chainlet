@@ -1,5 +1,5 @@
-chainlet.compat package
-=======================
+chainlet\.compat package
+========================
 
 .. automodule:: chainlet.compat
     :members:

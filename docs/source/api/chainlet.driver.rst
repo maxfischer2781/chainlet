@@ -1,5 +1,5 @@
-chainlet.driver module
-======================
+chainlet\.driver module
+=======================
 
 .. automodule:: chainlet.driver
     :members:

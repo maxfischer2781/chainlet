@@ -1,5 +1,5 @@
-chainlet.compat.python3 module
-==============================
+chainlet\.compat\.python3 module
+================================
 
 .. automodule:: chainlet.compat.python3
     :members:

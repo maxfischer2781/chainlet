@@ -1,5 +1,5 @@
-chainlet.chainlink module
-=========================
+chainlet\.chainlink module
+==========================
 
 .. automodule:: chainlet.chainlink
     :members:

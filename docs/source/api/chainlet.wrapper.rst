@@ -1,5 +1,5 @@
-chainlet.wrapper module
-=======================
+chainlet\.wrapper module
+========================
 
 .. automodule:: chainlet.wrapper
     :members:

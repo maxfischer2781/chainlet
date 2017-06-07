@@ -1,5 +1,5 @@
-chainlet.dataflow module
-========================
+chainlet\.dataflow module
+=========================
 
 .. automodule:: chainlet.dataflow
     :members:
