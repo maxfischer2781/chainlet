@@ -7,17 +7,17 @@ chainlet - blocks for processing chains
 =======================================
 
 .. image:: https://travis-ci.org/maxfischer2781/chainlet.svg?branch=master
-   :target: https://travis-ci.org/maxfischer2781/chainlet
-   :alt: Build Status
+    :target: https://travis-ci.org/maxfischer2781/chainlet
+    :alt: Build Status
 .. image:: https://landscape.io/github/maxfischer2781/chainlet/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/maxfischer2781/chainlet/master
-   :alt: Code Health
+    :target: https://landscape.io/github/maxfischer2781/chainlet/master
+    :alt: Code Health
 .. image:: https://codecov.io/gh/maxfischer2781/chainlet/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/maxfischer2781/chainlet
-   :alt: Test Coverage
+    :target: https://codecov.io/gh/maxfischer2781/chainlet
+    :alt: Test Coverage
 .. image:: https://readthedocs.org/projects/chainlet/badge/?version=latest
-   :target: http://chainlet.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
+    :target: http://chainlet.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 .. toctree::
     :maxdepth: 1
@@ -25,7 +25,8 @@ chainlet - blocks for processing chains
 
     source/grammar
     source/chains
-    Module Index <source/api/modules>
+    Basic Building Blocks <source/api/chainlet>
+    Builtin and Protocol Wrappers <source/api/chainlet.protolink>
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.
 At its heart, it is built for chaining generators/coroutines, but supports arbitrary objects.
@@ -33,7 +34,9 @@ It offers an easy, readable way to link elements using a concise mini language:
 
 .. code:: python
 
-    chain = a >> b >> c >> d >> f
+    data_chain = read('data.txt') >> prune(preserve=bool) >> convert(apply=ast.literal_eval)
+    for element in chain:
+        print(element)
 
 The same interface can be used to create chains that push data from the start downwards, or to pull from the end upwards.
 
