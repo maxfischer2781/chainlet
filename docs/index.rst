@@ -27,6 +27,7 @@ chainlet - blocks for processing chains
     source/chains
     Basic Building Blocks <source/api/chainlet>
     Builtin and Protocol Wrappers <source/api/chainlet.protolink>
+    Module Index <source/api/modules>
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.
 At its heart, it is built for chaining generators/coroutines, but supports arbitrary objects.
@@ -34,7 +35,7 @@ It offers an easy, readable way to link elements using a concise mini language:
 
 .. code:: python
 
-    data_chain = read('data.txt') >> prune(preserve=bool) >> convert(apply=ast.literal_eval)
+    data_chain = read('data.txt') >> filterlet(preserve=bool) >> convert(apply=ast.literal_eval)
     for element in chain:
         print(element)
 
@@ -60,7 +61,11 @@ Most functionality can be created from regular functions, generators and corouti
             new_value = yield(sum(buffer)/len(buffer))
             buffer.append(new_value)
 
+Quick Overview
+--------------
+
 If you just want to plug together existing chainlets, have a look at the :doc:`source/grammar`.
+To port existing imperative code, the :doc:`source/api/chainlet.protolink` provides simple helpers and equivalents of builtins.
 
 
 Indices and tables

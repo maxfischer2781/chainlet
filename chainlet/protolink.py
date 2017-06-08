@@ -48,6 +48,12 @@ def iterlet(iterable):
 
     :param iterable: object supporting iteration
     :type iterable: iterable
+
+    .. code::
+
+        chain = iterlet([1, 2, 3, 4, 5, 5, 6, 6]) >> filterlet(lambda chunk: chunk % 2 == 0)
+        for element in chain:
+            print(element)  # prints 2, 4, 6, 6
     """
     for chunk in iterable:
         yield chunk
@@ -57,41 +63,42 @@ def reverselet(iterable):
     """
     Pull chunks from an object using reverse iteration
 
-    :param iterable: object supporting (reverse) iteration
+    :param iterable: object supporting reverse iteration
     :type iterable: iterable
+
+    See :py:func:`~.iterlet` for an example.
     """
     return iterlet(reversed(iterable))
 
 
 def enumeratelet(iterable=None, start=0):
-    """
+    r"""
     Enumerate chunks of data from an iterable or a chain
 
     :param iterable: object supporting iteration, or an index
     :type iterable: iterable, None or int
     :param start: an index to start counting from
     :type start: int
-
-    Depending on the arguments provided, :py:func:`enumeratelet`
-    supports either of two types of operations:
-
-    **pull**: first argument is an iterable
-        Pulls chunks from ``iterable``, and index them starting from ``start``.
-
-    **push**: first argument is None
-        Receive chunks from a chain, and index each chunk starting from ``start``.
-
-    **push**: first argument is not iterable
-        Interpret the first argument as the starting index.
+    :raises TypeError: if both parameters are set and ``iterable`` does not support iteration
 
     In pull mode, :py:func:`~.enumeratelet` works similar to the
     builtin :py:func:`~.enumerate` but is chainable:
 
     .. code::
 
-        chain = enumeratelet(['Paul', 'Thomas', 'Brian']) >> pretty_print()
+        chain = enumeratelet(['Paul', 'Thomas', 'Brian']) >> printlet(sep=':\t')
         for value in chain:
-            print(value)  # prints 1.0, 1.5, 3.0, 3.5
+            pass  # prints `0:	Paul`, `1:	Thomas`, `2:	Brian`
+
+    By default, :py:func:`~.enumeratelet` enumerates chunks passed in from a pipeline.
+    To use a different starting index, *either* set the ``start`` keyword parameter *or*
+    set the first positional parameter.
+
+    .. code::
+
+        chain = iteratelet(['Paul', 'Thomas', 'Brian']) >> enumeratelet() >> printlet(sep=':\t')
+        for value in chain:
+            pass  # prints `0:	Paul`, `1:	Thomas`, `2:	Brian`
     """
     # shortcut directly to chain enumeration
     if iterable is None:

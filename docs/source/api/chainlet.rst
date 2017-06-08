@@ -23,6 +23,7 @@ Submodules
    chainlet.driver
    chainlet.funclink
    chainlet.genlink
+   chainlet.protolink
    chainlet.utility
    chainlet.wrapper
 
