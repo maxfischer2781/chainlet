@@ -77,6 +77,17 @@ Ongoing work is mainly focused on the iteration interface.
 We plan to add automatic concurrency, asynchronicity and parallelism.
 Our target is an opt-in approach to features from functional programming and static optimisations.
 
+Recent Changes
+--------------
+
+v1.1.0
+
+    Added chainlet versions of builtins and protocol interfaces
+
+v1.0.0
+
+    Initial release
+
 .. |docs| image:: https://readthedocs.org/projects/chainlet/badge/?version=latest
    :target: http://chainlet.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status

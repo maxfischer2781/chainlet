@@ -27,6 +27,7 @@ chainlet - blocks for processing chains
     source/chains
     Basic Building Blocks <source/api/chainlet>
     Builtin and Protocol Wrappers <source/api/chainlet.protolink>
+    Changelog <source/changelog>
     Module Index <source/api/modules>
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.
