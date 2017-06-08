@@ -33,7 +33,7 @@ Any protolink that works on iterables supports two modes of operation:
     These are usually equivalent to wrapping a chain in the corresponding builtin, but preserve
     chain features.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import operator
 
 from . import chainlink
@@ -144,6 +144,19 @@ def _filterlet(value=None, function=bool):
     if function(value):
         return value
     raise chainlink.StopTraversal
+
+
+@genlink.genlet
+def printlet(flatten=False, **kwargs):
+    chunk = yield
+    if flatten:
+        while True:
+            print(*chunk, **kwargs)
+            chunk = yield chunk
+    else:
+        while True:
+            print(chunk, **kwargs)
+            chunk = yield chunk
 
 
 @genlink.genlet(prime=False)
