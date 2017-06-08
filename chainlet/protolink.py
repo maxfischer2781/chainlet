@@ -138,7 +138,7 @@ def filterlet(function=bool, iterable=None):
 
         chain = iterlet(range(10)) >> filterlet(lambda chunk: chunk % 2 == 0)
         for value in chain:
-            print(value)  # prints 2, 4, 6, 8
+            print(value)  # prints 0, 2, 4, 6, 8
     """
     if iterable is None:
         return _filterlet(function=function)

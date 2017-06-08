@@ -3,9 +3,19 @@ import itertools
 import unittest
 import random
 
-from chainlet.protolink import iterlet, reverselet, enumeratelet
+from chainlet.protolink import iterlet, reverselet, enumeratelet, filterlet
 
 from chainlet_unittests.utility import Buffer
+
+
+def odd(value):
+    """Test if value is odd"""
+    return value % 2 != 0
+
+
+def even(value):
+    """Test if value is even"""
+    return value % 2 == 0
 
 
 class Protolinks(unittest.TestCase):
@@ -41,7 +51,7 @@ class Protolinks(unittest.TestCase):
         self.assertEqual(buffer.buffer, list(enumerate(fixed_iterable)))
 
     def test_enumeratelet_push(self):
-        """Push to enumeration as  `>> enumeratelet() >> ...`"""
+        """Push to enumeration as  `... >> enumeratelet() >> ...`"""
         fixed_iterable = self._get_test_seq()
         for start_val in [0, 2, 500] + [random.randint(-10, 10) for _ in range(5)]:
             for args, kwargs in (((), {}), ((), {'start': start_val}), ((start_val,), {})):
@@ -65,3 +75,25 @@ class Protolinks(unittest.TestCase):
             enumeratelet(None, 1.0)
         with self.assertRaises(TypeError):
             enumeratelet(1.0)
+
+    def test_filterlet_pull(self):
+        """Pull from iterable as `filterlet(condition, iterable) >> ...`"""
+        fixed_iterable = self._get_test_seq()
+        for condition in (odd, even):
+            self.assertEqual(list(filterlet(condition, fixed_iterable)), list(filter(condition, fixed_iterable)))
+            buffer = Buffer()
+            chain = filterlet(condition, fixed_iterable) >> buffer
+            self.assertEqual(list(chain), list(filter(condition, fixed_iterable)))
+            self.assertEqual(buffer.buffer, list(filter(condition, fixed_iterable)))
+
+    def test_filterlet_puush(self):
+        """Push to filter as `... >> filterlet(condition) >> ...`"""
+        fixed_iterable = self._get_test_seq()
+        for condition in (odd, even):
+            self.assertEqual(
+                list(iterlet(fixed_iterable) >> filterlet(condition)), list(filter(condition, fixed_iterable))
+            )
+            buffer = Buffer()
+            chain = iterlet(fixed_iterable) >> filterlet(condition) >> buffer
+            self.assertEqual(list(chain), list(filter(condition, fixed_iterable)))
+            self.assertEqual(buffer.buffer, list(filter(condition, fixed_iterable)))
