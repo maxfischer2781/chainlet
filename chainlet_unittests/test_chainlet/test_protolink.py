@@ -1,9 +1,8 @@
-from __future__ import absolute_import
-import itertools
+from __future__ import absolute_import, print_function
 import unittest
 import random
 
-from chainlet.protolink import iterlet, reverselet, enumeratelet, filterlet
+from chainlet.protolink import iterlet, reverselet, enumeratelet, filterlet, printlet
 
 from chainlet_unittests.utility import Buffer
 
@@ -16,6 +15,19 @@ def odd(value):
 def even(value):
     """Test if value is even"""
     return value % 2 == 0
+
+
+class WriteBuffer(list):
+    def __init__(self):
+        list.__init__(self)
+        self._line_buffer = []
+
+    def write(self, value):
+        if value == '\n':
+            self.append(''.join(self._line_buffer))
+            self._line_buffer = []
+        else:
+            self._line_buffer.append(value)
 
 
 class Protolinks(unittest.TestCase):
@@ -86,7 +98,7 @@ class Protolinks(unittest.TestCase):
             self.assertEqual(list(chain), list(filter(condition, fixed_iterable)))
             self.assertEqual(buffer.buffer, list(filter(condition, fixed_iterable)))
 
-    def test_filterlet_puush(self):
+    def test_filterlet_push(self):
         """Push to filter as `... >> filterlet(condition) >> ...`"""
         fixed_iterable = self._get_test_seq()
         for condition in (odd, even):
@@ -97,3 +109,24 @@ class Protolinks(unittest.TestCase):
             chain = iterlet(fixed_iterable) >> filterlet(condition) >> buffer
             self.assertEqual(list(chain), list(filter(condition, fixed_iterable)))
             self.assertEqual(buffer.buffer, list(filter(condition, fixed_iterable)))
+
+    def test_printlet_flat(self):
+        """Push to print as  `... >> printlet(flatten=False) >> ..."""
+        write_buffer = WriteBuffer()
+        chain_buffer = Buffer()
+        flat_iterable = ['Hello World', 'This is a drill']
+        chain = iterlet(flat_iterable) >> printlet(file=write_buffer) >> chain_buffer
+        self.assertEqual(list(chain), flat_iterable)  # no modification by print
+        self.assertEqual(chain_buffer.buffer, flat_iterable)
+        self.assertEqual(write_buffer, flat_iterable)
+
+    def test_printlet_flatten(self):
+        """Push to print as  `... >> printlet(flatten=False) >> ..."""
+        write_buffer = WriteBuffer()
+        chain_buffer = Buffer()
+        flat_iterable = ['Hello World', 'This is a drill']
+        nested_iterable = [elem.split() for elem in flat_iterable]
+        chain = iterlet(nested_iterable) >> printlet(file=write_buffer, flatten=True) >> chain_buffer
+        self.assertEqual(list(chain), nested_iterable)  # no modification by print
+        self.assertEqual(chain_buffer.buffer, nested_iterable)
+        self.assertEqual(write_buffer, flat_iterable)
