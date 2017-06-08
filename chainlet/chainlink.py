@@ -9,14 +9,26 @@ END_OF_CHAIN = utility.Sentinel('END OF CHAIN')
 
 
 class StopTraversal(Exception):
-    """Stop the traversal of a chain"""
+    """
+    Stop the traversal of a chain
+
+    :param return_value: the value returned by the chain
+
+    Any chain element raising :py:exc:`~.StopTraversal` signals that
+    subsequent elements of the chain should not be visited. If
+    ``return_value`` is set, it becomes the final return value of the chain.
+    Otherwise, no return value is provided.
+
+    :note: This signal explicitly affects the current chain only. It does not
+           affect other, parallel chains of a graph.
+    """
     def __init__(self, return_value=END_OF_CHAIN):
         Exception.__init__(self)
         self.return_value = return_value
 
 
 class _ElementExhausted(Exception):
-    """An element has not more values to produce"""
+    """An element has no more values to produce"""
 
 
 class ChainLink(object):

@@ -64,9 +64,23 @@ Most functionality can be created from regular functions, generators and corouti
 Quick Overview
 --------------
 
-If you just want to plug together existing chainlets, have a look at the :doc:`source/grammar`.
+To just plug together existing chainlets, have a look at the :doc:`source/grammar`.
 To port existing imperative code, the :doc:`source/api/chainlet.protolink` provides simple helpers and equivalents of builtins.
 
+Writing new chainlets is easily done writing generators, coroutines and functions, decorated with :py:func:`chainlet.genlet` or :py:func:`chainlet.funclet`.
+A :py:func:`chainlet.genlet` is best when state must be preserved between calls.
+A :py:func:`chainlet.funclet` allows resuming even after exceptions.
+
+Advanced chainlets are best implemented as a subclass of :py:class:`chainlet.ChainLink`.
+Overwrite instantiation and :py:meth:`~chainlet.ChainLink.chainlet_send` to change their behaviour [#wrapperdetail]_.
+In order to change binding semantics, overwrite the ``__rshift__`` and ``__lshift__`` operators.
+
+Contributing and Feedback
+-------------------------
+
+The project is hosted on `github <https://github.com/maxfischer2781/chainlet>`_.
+If you have issues or suggestion, check the issue tracker: |issues|
+For direct contributions, feel free to fork the `development branch <https://github.com/maxfischer2781/chainlet/tree/devel>`_ and open a pull request.
 
 Indices and tables
 ==================
@@ -76,5 +90,12 @@ Indices and tables
 * :ref:`search`
 
 ----------
+
+.. [#wrapperdetail] Both :py:func:`chainlet.genlet` and :py:func:`chainlet.funclet` implement instantiation and :py:meth:`~chainlet.ChainLink.chainlet_send` for the most common use case.
+                    They simply bind their callables on instantitation, then call them on :py:meth:`~chainlet.ChainLink.chainlet_send`.
+
+.. |issues| image:: https://img.shields.io/github/issues-raw/maxfischer2781/chainlet.svg
+   :target: https://github.com/maxfischer2781/chainlet/issues
+   :alt: Open Issues
 
 Documentation built from chainlet |version| at |today|.
