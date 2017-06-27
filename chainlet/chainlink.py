@@ -389,6 +389,7 @@ class MetaChain(ConcurrentChain):
     @staticmethod
     def _send_n_to_1(element, values):
         # aggregate input for joining paths
+        # iterator goes in, values comes out
         try:
             return [element.chainlet_send(values)]
         except StopTraversal as err:
@@ -399,14 +400,15 @@ class MetaChain(ConcurrentChain):
     @staticmethod
     def _send_1_to_1(element, values):
         # unpack input, pack output
-        return_values = []
+        # chunks from iterator go in, one chunk comes out for each chunk
         for value in values:
             try:
-                return_values.append(element.chainlet_send(value))
+                yield element.chainlet_send(value)
             except StopTraversal as err:
                 if err.return_value is not END_OF_CHAIN:
-                    return_values.append(err.return_value)
-        return return_values
+                    yield err.return_value
+            except StopIteration:
+                raise _ElementExhausted
 
     def __repr__(self):
         return ' >> '.join(repr(elem) for elem in self.elements)
