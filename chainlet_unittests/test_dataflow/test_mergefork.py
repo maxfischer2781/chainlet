@@ -12,14 +12,6 @@ except AttributeError:
     zip_longest = itertools.izip_longest
 
 
-@chainlet.forklet
-@chainlet.genlet(prime=False)
-def produce_iterables(iterable):
-    """Produce iterables from an iterable for a chain"""
-    for element in iterable:
-        yield element
-
-
 class ChainMerging(unittest.TestCase):
     def test_merge_unknown(self):
         """Merge unknown types from multiple elements"""
@@ -32,6 +24,9 @@ class ChainMerging(unittest.TestCase):
 
             def __radd__(self, other):
                 return self.value + other
+
+            def __repr__(self):
+                return '%s(%s)' % (self.__class__.__name__, self.value)
         inputs = [[1, 2, 3], [4, 5, 6], [7.5, 8.5, 9.5]]
         inputs = [[Numerical(val) for val in chunk] for chunk in inputs]
         chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
