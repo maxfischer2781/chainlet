@@ -5,6 +5,8 @@ from .compat import throw_method as _throw_method
 from . import utility
 
 
+__all__ = ['END_OF_CHAIN', 'StopTraversal', 'ChainLink']
+
 END_OF_CHAIN = utility.Sentinel('END OF CHAIN')
 
 
