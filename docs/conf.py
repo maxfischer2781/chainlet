@@ -21,7 +21,7 @@ import os
 import sys
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import chainlet.__about__
+from chainlet import __about__
 
 
 # -- General configuration ------------------------------------------------
@@ -55,16 +55,16 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'chainlet'
-copyright = '2017, Max Fischer'
-author = 'Max Fischer'
+project = __about__.__title__
+copyright = __about__.__copyright__
+author = __about__.__author__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = chainlet.__about__.__version__
+version = __about__.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
