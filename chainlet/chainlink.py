@@ -19,6 +19,10 @@ class StopTraversal(Exception):
     ``return_value`` is set, it becomes the final return value of the chain.
     Otherwise, no return value is provided.
 
+    Raising :py:exc:`~.StopTraversal` does *not* mean the element is exhausted.
+    It may still produce values regularly on future traversal.
+    If an element will *never* produce values again, it should raise :py:exc:`StopIteration`.
+
     :note: This signal explicitly affects the current chain only. It does not
            affect other, parallel chains of a graph.
     """
