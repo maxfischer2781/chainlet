@@ -212,16 +212,21 @@ class ChainLink(object):
         pass
 
 
-class Chain(ChainLink):
+# Chain/Graph compound objects
+# These should probably not be public at all...
+class CompoundLink(ChainLink):
     """
     Baseclass for compound chainlets consisting of other chainlets
 
     :param elements: the chainlets making up this chain
     :type elements: iterable[:py:class:`ChainLink`]
+
+    These compound elements expose the regular interface of chainlets.
+    They can again be chained or stacked to form more complex chainlets.
     """
     def __init__(self, elements):
         self.elements = elements
-        super(Chain, self).__init__()
+        super(CompoundLink, self).__init__()
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -235,7 +240,7 @@ class Chain(ChainLink):
         raise NotImplementedError
 
 
-class LinearChain(Chain):
+class LinearChain(CompoundLink):
     """
     A linear sequence of chainlets, with each element preceding the next
     """
@@ -254,7 +259,7 @@ class LinearChain(Chain):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class ConcurrentChain(Chain):  # pylint: disable=abstract-method
+class ConcurrentChain(CompoundLink):  # pylint: disable=abstract-method
     """
     A collection of concurrent chainlets, with multiple elements running at the same time
     """
