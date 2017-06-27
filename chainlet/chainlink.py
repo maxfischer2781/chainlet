@@ -262,21 +262,21 @@ class ConcurrentChain(Chain):  # pylint: disable=abstract-method
     def __iter__(self):
         while True:
             try:
-                result = self.chainlet_send(None)
+                result = list(self.chainlet_send(None))
                 if result:
                     yield result
-            except StopIteration:
+            except (StopIteration, _ElementExhausted):
                 break
 
     def send(self, value=None):
         """Send a value to this element for processing"""
         # we do one explicit loop to keep overhead low...
-        result = self.chainlet_send(value)
+        result = list(self.chainlet_send(value))
         if result:
             return result
         # ...then do the correct loop if needed
         while True:
-            result = self.chainlet_send(value)
+            result = list(self.chainlet_send(value))
             if result:
                 return result
 
@@ -364,7 +364,7 @@ class MetaChain(ConcurrentChain):
                     raise NotImplementedError
                 if not values:
                     break
-            return list(values)
+            return values
         # An element in the chain is exhausted permanently
         except _ElementExhausted:
             raise StopIteration
