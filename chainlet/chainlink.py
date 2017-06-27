@@ -343,40 +343,48 @@ class MetaChain(ConcurrentChain):
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
-        for element in self.elements:
-            # aggregate input for joining paths, flatten output of parallel paths
-            if element.chain_join and element.chain_fork:
-                values = self._send_n_to_m(element, values)
-            # flatten output of parallel paths for each input
-            elif not element.chain_join and element.chain_fork:
-                values = self._send_1_to_m(element, values)
-            # neither fork nor join, unwrap input and output
-            elif not element.chain_join and not element.chain_fork:
-                values = self._send_1_to_1(element, values)
-            elif element.chain_join and not element.chain_fork:
-                values = self._send_n_to_1(element, values)
-            else:
-                raise NotImplementedError
-            if not values:
-                break
-        return values
+        try:
+            for element in self.elements:
+                # aggregate input for joining paths, flatten output of parallel paths
+                if element.chain_join and element.chain_fork:
+                    values = self._send_n_to_m(element, values)
+                # flatten output of parallel paths for each input
+                elif not element.chain_join and element.chain_fork:
+                    values = self._send_1_to_m(element, values)
+                # neither fork nor join, unwrap input and output
+                elif not element.chain_join and not element.chain_fork:
+                    values = self._send_1_to_1(element, values)
+                elif element.chain_join and not element.chain_fork:
+                    values = self._send_n_to_1(element, values)
+                else:
+                    raise NotImplementedError
+                if not values:
+                    break
+            return list(values)
+        # An element in the chain is exhausted permanently
+        except _ElementExhausted:
+            raise StopIteration
 
     @staticmethod
     def _send_n_to_m(element, values):
         # aggregate input for joining paths, flatten output of parallel paths
+        # iterator goes in, iterator comes out
         return element.chainlet_send(values)
 
     @staticmethod
     def _send_1_to_m(element, values):
         # flatten output of parallel paths for each input
-        return_values = []
+        # chunks from iterator go in, iterator comes out for each chunk
         for value in values:
             try:
-                return_values.extend(element.chainlet_send(value))
+                for return_value in element.chainlet_send(value):
+                    yield return_value
             except StopTraversal as err:
                 if err.return_value is not END_OF_CHAIN:
-                    return_values.extend(err.return_value)
-        return return_values
+                    for return_value in err.return_value:
+                        yield return_value
+            except StopIteration:
+                raise _ElementExhausted
 
     @staticmethod
     def _send_n_to_1(element, values):
