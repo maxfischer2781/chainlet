@@ -1,3 +1,23 @@
+from __future__ import absolute_import
+import sys
+
+
+def getname(obj):
+    """
+    Return the most qualified name of an object
+
+    :param obj: object to fetch name
+    :return: name of ``obj``
+    """
+    for name_attribute in ('__qualname__', '__name__'):
+        try:
+            # an object always has a class, as per Python data model
+            return getattr(obj, name_attribute, getattr(obj.__class__, name_attribute))
+        except AttributeError:
+            pass
+    raise TypeError('object of type %r does not define a canonical name' % type(obj))
+
+
 class WrapperMixin(object):
     r"""
     Mixin for :py:class:`ChainLink`\ s that wrap other objects
@@ -30,3 +50,64 @@ class WrapperMixin(object):
     @property
     def slave(self):
         return self.__wrapped__
+
+    def __repr__(self):
+        return '<%s wrapper %s.%s at %x>' % (
+            self.__class__.__name__, self.__wrapped__.__module__,
+            getname(self.__wrapped__),
+            id(self)
+        )
+
+    def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def wraplet(cls, *cls_args, **cls_kwargs):
+        def wrapper_factory(raw_slave):
+            """Factory to create a new class by wrapping ``raw_slave``"""
+            class Wraplet(cls):
+                _raw_slave = staticmethod(raw_slave)
+                # Assign the wrapped attributes directly instead of
+                # using functools.wraps, as we may deal with arbitrarry
+                # class/callable combinations.
+                __doc__ = raw_slave.__doc__
+                # While the wrapped instance wraps the slave, the
+                # wrapper class wraps the slave factory. Any instance
+                # then just hides the class level attribute.
+                # Exposing __wrapped__ here allows introspection,such
+                # as inspect.signature, to pick up metadata.
+                __wrapped__ = raw_slave
+                # In Py3.X, objects without any annotations just provide an
+                # empty dict.
+                __annotations__ = getattr(raw_slave, '__annotations__', {})
+
+                def __init__(self, *slave_args, **slave__kwargs):
+                    slave = self.__init_slave__(self._raw_slave, *slave_args, **slave__kwargs)
+                    super(Wraplet, self).__init__(slave, *cls_args, **cls_kwargs)
+
+                def __repr__(self):
+                    return '<%s wrapper %s.%s at %x>' % (
+                        self.__class__.__name__, self.__module__,
+                        self.__class__.__qualname__,
+                        id(self)
+                    )
+
+            # swap places with our target so that both can be pickled/unpickled
+            Wraplet.__name__ = getname(raw_slave).split('.')[-1]
+            Wraplet.__qualname__ = getname(raw_slave)
+            Wraplet.__module__ = raw_slave.__module__
+            # this is enough for Py3.4+ to find the slave
+            raw_slave.__qualname__ = Wraplet.__qualname__ + '._raw_slave'
+            # ## This is an EVIL hack! Do not use use this at home unless you understand it! ##
+            # enable python2 lookup of the slave via its wrapper
+            # This allows to implicitly pickle slave objects which already support pickle,
+            # e.g. function and partial.
+            # python2 pickle performs the equivalent of getattr(sys.modules[obj.__module__, obj.__name__]
+            # which does not allow dotted name lookups. To work around this, we place the slave into the
+            # module, globally, using the dotted name *explicitly*. As dotted names are not valid identifiers,
+            # this will not create a collision unless someone tries to do the same trick.
+            if sys.version_info < (3, 4):
+                setattr(sys.modules[raw_slave.__module__], raw_slave.__name__ + '._raw_slave', raw_slave)
+                raw_slave.__name__ += '._raw_slave'
+            return Wraplet
+        return wrapper_factory
