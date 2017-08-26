@@ -41,7 +41,7 @@ from . import chainlink
 
 class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     """
-    Wrapper making a generator act like a ChainLink
+    Wrapper making a function act like a ChainLink
 
     :param slave: the function to wrap
     :param args: positional arguments for the slave
@@ -63,6 +63,15 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
         # prime slave for receiving send
         self._wrapped_args = args
         self._wrapped_kwargs = kwargs
+
+    def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
+        if slave_args or slave_kwargs:
+            slave = functools.partial(raw_slave, *slave_args, **slave_kwargs)
+            slave.__module__ = raw_slave.__module__
+            slave.__name__ = raw_slave.__name__
+            slave.__qualname__ = chainlet.wrapper.getname(raw_slave)
+            return slave
+        return raw_slave
 
     def chainlet_send(self, value=None):
         """Send a value to this element"""
