@@ -59,23 +59,18 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     are ignored.
     """
     def __init__(self, slave, *args, **kwargs):
+        if args or kwargs:
+            slave = functools.partial(slave, *args, **kwargs)
         super(FunctionLink, self).__init__(slave=slave)
-        # prime slave for receiving send
-        self._wrapped_args = args
-        self._wrapped_kwargs = kwargs
 
     def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
         if slave_args or slave_kwargs:
-            slave = functools.partial(raw_slave, *slave_args, **slave_kwargs)
-            slave.__module__ = raw_slave.__module__
-            slave.__name__ = raw_slave.__name__
-            slave.__qualname__ = chainlet.wrapper.getname(raw_slave)
-            return slave
+            return functools.partial(raw_slave, *slave_args, **slave_kwargs)
         return raw_slave
 
     def chainlet_send(self, value=None):
         """Send a value to this element"""
-        return self.__wrapped__(value=value, *self._wrapped_args, **self._wrapped_kwargs)
+        return self.__wrapped__(value=value)
 
 
 def funclet(function):
