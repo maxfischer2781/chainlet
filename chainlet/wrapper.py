@@ -107,7 +107,20 @@ class WrapperMixin(object):
             # module, globally, using the dotted name *explicitly*. As dotted names are not valid identifiers,
             # this will not create a collision unless someone tries to do the same trick.
             if sys.version_info < (3, 4):
-                setattr(sys.modules[raw_slave.__module__], raw_slave.__name__ + '._raw_slave', raw_slave)
-                raw_slave.__name__ += '._raw_slave'
+                # Make sure we actually register the correct entity
+                # Since we are only working with __name__, the slave could be defined
+                # in an inner scope. In this case, registering it in the global namespace
+                # may increase its lifetime, or replace an actual global slave of the
+                # same name.
+                # There are two cases we have to check here:
+                # slave = wraplet(slave)
+                #   The slave already exists in the module namespace, with its __name__.
+                #   The object with that name must be *identical* to the slave.
+                # @wraplet\ndef slave
+                #   Neither slave nor Wrapper exist in the namespace yet (they are only bound *after*
+                #   the wraplet returns). No object may exist with the same name.
+                if getattr(sys.modules[raw_slave.__module__], raw_slave.__name__, raw_slave) is raw_slave:
+                    setattr(sys.modules[raw_slave.__module__], raw_slave.__name__ + '._raw_slave', raw_slave)
+                    raw_slave.__name__ += '._raw_slave'
             return Wraplet
         return wrapper_factory
