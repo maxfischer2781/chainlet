@@ -77,12 +77,4 @@ def funclet(function):
     """
     Convert a function to a :py:class:`~chainlink.ChainLink`
     """
-    def linker(*args, **kwargs):
-        """
-        Creates a partially bound function acting as a chainlet.ChainLink
-
-        :rtype: :py:class:`~chainlink.ChainLink`
-        """
-        return FunctionLink(function, *args, **kwargs)
-    functools.update_wrapper(linker, function)
-    return linker
+    return FunctionLink.wraplet()(function)
