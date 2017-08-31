@@ -50,12 +50,12 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     :note: Use the :py:func:`funclet` function if you wish to decorate a
            function to produce FunctionLinks.
 
-    This class wraps a function partially, calling it to perform
-    work when receiving a value and passing on the result. The `slave` can be
-    any object that is callable, and should take at least a named parameter `value`.
+    This class wraps a function (or other callable), calling it to perform
+    work when receiving a value and passing on the result. The ``slave`` can be
+    any object that is callable, and should take at least a named parameter ``value``.
 
     When receiving a value as part of a chain, :py:meth:`send` acts like
-    `slave(value=value, *args, **kwargs)`. Any calls to :py:meth:`throw` and :py:meth:`close`
+    ``slave(value=value, *args, **kwargs)``. Any calls to :py:meth:`throw` and :py:meth:`close`
     are ignored.
     """
     def __init__(self, slave, *args, **kwargs):
