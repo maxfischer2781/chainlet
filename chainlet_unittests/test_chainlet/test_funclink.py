@@ -88,6 +88,7 @@ class TestFunctionLink(unittest.TestCase):
                 self._subtest_cloned_result(native, pickle.loads(pickle.dumps(native)))
 
     def _subtest_cloned_result(self, original, clone):
+        self.assertIsNot(original, clone)
         # direct access
         self.assertEqual(original.send(), clone.send())
         # chain access
