@@ -64,6 +64,9 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
         if prime:
             next(self.__wrapped__)
 
+    def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
+        return raw_slave(*slave_args, **slave_kwargs)
+
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
         return self.__wrapped__.send(value)
@@ -86,7 +89,7 @@ def genlet(generator_function=None, prime=True):
     :param prime: advance the generator to the next/first yield
     :type prime: bool
 
-    When used as a decorator, this function can also be called with keywords.
+    When used as a decorator, this function can also be called with and without keywords.
 
     .. code:: python
 
@@ -102,18 +105,15 @@ def genlet(generator_function=None, prime=True):
             "Chainlet that produces a value"
             while True:
                 yield time.time()
+
+        @genlet(True)
+        def read(iterable):
+            "Chainlet that reads from an iterable"
+            for item in iterable:
+                yield item
     """
     if generator_function is None:
-        return functools.partial(genlet, prime=prime)
+        return GeneratorLink.wraplet(prime=prime)
     elif not callable(generator_function):
-        return functools.partial(genlet, prime=generator_function)
-
-    def linker(*args, **kwargs):
-        """
-        Creates a new generator instance acting as a chainlet.ChainLink
-
-        :rtype: :py:class:`~chainlink.ChainLink`
-        """
-        return GeneratorLink(generator_function(*args, **kwargs), prime=prime)
-    functools.update_wrapper(linker, generator_function)
-    return linker
+        return GeneratorLink.wraplet(prime=generator_function)
+    return GeneratorLink.wraplet(prime=prime)(generator_function)
