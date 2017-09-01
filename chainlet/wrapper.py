@@ -65,7 +65,7 @@ class WrapperMixin(object):
     def wraplet(cls, *cls_args, **cls_kwargs):
         def wrapper_factory(raw_slave):
             """Factory to create a new class by wrapping ``raw_slave``"""
-            class Wraplet(cls):
+            class Wraplet(cls):  # pylint:disable=abstract-method
                 _raw_slave = staticmethod(raw_slave)
                 # Assign the wrapped attributes directly instead of
                 # using functools.wraps, as we may deal with arbitrarry

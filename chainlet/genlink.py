@@ -37,7 +37,6 @@ applying a decorator:
     producer >> windowed_average(16) >> consumer
 """
 from __future__ import division, absolute_import
-import functools
 
 from . import chainlink, wrapper
 
