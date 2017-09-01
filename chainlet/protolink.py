@@ -115,11 +115,11 @@ def enumeratelet(iterable=None, start=0):
 
 @genlink.genlet
 def _enumeratelet(start=0):
-    n = operator.index(start)
+    index = operator.index(start)
     chunk = yield
     while True:
-        chunk = yield (n, chunk)
-        n += 1
+        chunk = yield (index, chunk)
+        index += 1
 
 
 def filterlet(function=bool, iterable=None):
