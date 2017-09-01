@@ -105,7 +105,7 @@ def genlet(generator_function=None, prime=True):
     """
     if generator_function is None:
         return functools.partial(genlet, prime=prime)
-    elif isinstance(generator_function, bool):
+    elif not callable(generator_function):
         return functools.partial(genlet, prime=generator_function)
 
     def linker(*args, **kwargs):
