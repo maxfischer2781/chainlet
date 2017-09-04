@@ -38,6 +38,7 @@ applying a decorator:
 """
 from __future__ import division, absolute_import
 import sys
+import types
 
 from . import chainlink, wrapper
 
@@ -85,6 +86,10 @@ class StashedGenerator(object):
         self._args = args
         self._kwargs = kwargs
         self._generator = None
+
+    @property
+    def __class__(self):
+        return types.GeneratorType
 
     def _materialize(self):
         # create generator first so that we are sure it is working
@@ -141,13 +146,18 @@ class StashedGenerator(object):
     # https://bugs.python.org/issue14577
     def __reduce__(self):
         if self._generator is not None:
-            raise TypeError('%s objects cannot be pickled after iteration' % self.__class__.__name__)
+            raise TypeError('%s objects cannot be pickled after iteration' % type(self).__name__)
         return _unpickle_stashed_generator, (self._generator_function, self._args, self._kwargs)
+
+    # faking __class__ fetches __reduce_ex__ from the wrong location
+    # in py3.3 and before
+    def __reduce_ex__(self, protocol):
+        return self.__reduce__()
 
     def __repr__(self):
         if self._generator is not None:
-            return repr(self._generator)
-        return '%s(*%s, **%s)' % (self._generator_function, self._args, self._kwargs)
+            return '%s(%r)' % (type(self).__name__, self._generator)
+        return '%s(%s, *%s, **%s)' % (type(self).__name__, self._generator_function, self._args, self._kwargs)
 
 
 class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
