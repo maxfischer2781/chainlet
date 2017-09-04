@@ -83,6 +83,10 @@ class StashedGenerator(object):
         self._kwargs = kwargs
         self._generator = None
 
+    @classmethod
+    def _from_pickle(cls, generator_function, args, kwargs):
+        return cls(generator_function, *args, **kwargs)
+
     @property
     def __class__(self):
         # fake our type to appear as a builtin generator
@@ -137,10 +141,14 @@ class StashedGenerator(object):
         self._materialize()
         self._generator.close()
 
-    def __getstate__(self):
+    # since we fake __class__, pickle cannot find us automatically
+    # __reduce__ is required to explicitly give the class to recover
+    # any instances.
+    # https://bugs.python.org/issue14577
+    def __reduce__(self):
         if self._generator is not None:
             raise TypeError('%s objects cannot be pickled after iteration' % type(self).__name__)
-        return vars(self)
+        return type(self)._from_pickle, (self._generator_function, self._args, self._kwargs), None
 
 
 class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
