@@ -81,11 +81,13 @@ class TestFunctionLink(unittest.TestCase):
                 # slave is preserved
                 self.assertEqual(native.slave(), copy.copy(native).slave())
                 self.assertEqual(native.slave(), copy.deepcopy(native).slave())
-                self.assertEqual(native.slave(), pickle.loads(pickle.dumps(native)).slave())
                 # chainlet is preserved
                 self._subtest_cloned_result(native, copy.copy(native))
                 self._subtest_cloned_result(native, copy.deepcopy(native))
-                self._subtest_cloned_result(native, pickle.loads(pickle.dumps(native)))
+            for proto in range(pickle.HIGHEST_PROTOCOL):
+                with self.subTest(case, pickle_protocol=proto):
+                    self.assertEqual(native.slave(), pickle.loads(pickle.dumps(native, proto)).slave())
+                    self._subtest_cloned_result(native, pickle.loads(pickle.dumps(native, proto)))
 
     def _subtest_cloned_result(self, original, clone):
         self.assertIsNot(original, clone)
