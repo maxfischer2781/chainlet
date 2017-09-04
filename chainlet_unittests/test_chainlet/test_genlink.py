@@ -2,11 +2,38 @@ import unittest
 import random
 
 import chainlet
+import chainlet.genlink
 
 from chainlet_unittests.utility import NamedChainlet
 
 
-class GeneratorLink(unittest.TestCase):
+def counter_generator(*args, **kwargs):
+    for arg in args:
+        yield arg
+    for item in sorted(kwargs.items()):
+        yield item
+
+
+class TestStashedGenerator(unittest.TestCase):
+    def test_content(self):
+        """StashedGenerator produces same content as generator"""
+        for args, kwargs in (
+            (list(range(16)), dict(('a%d' % item, item**2) for item in range(16))),
+            (
+                    [random.random() for _ in range(128)],
+                    dict(('a%d' % random.randint(0, 96), random.random()) for _ in range(128))
+            ),
+        ):
+            native_gen = counter_generator(*args, **kwargs)
+            stashed_gen = chainlet.genlink.StashedGenerator(counter_generator, *args, **kwargs)
+            self.assertEqual(list(native_gen), list(stashed_gen))
+            # cannot iterate past content
+            for this_gen in (native_gen, stashed_gen):
+                with self.assertRaises(StopIteration):
+                    next(this_gen)
+
+
+class TestGeneratorLink(unittest.TestCase):
     def test_prime(self):
         """Prime generator for use"""
         def generator():
