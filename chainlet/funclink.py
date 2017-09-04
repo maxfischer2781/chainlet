@@ -63,7 +63,8 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
             slave = functools.partial(slave, *args, **kwargs)
         super(FunctionLink, self).__init__(slave=slave)
 
-    def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
+    @staticmethod
+    def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
         if slave_args or slave_kwargs:
             return functools.partial(raw_slave, *slave_args, **slave_kwargs)
         return raw_slave
