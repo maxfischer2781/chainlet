@@ -100,7 +100,10 @@ class MergeLink(chainlink.ChainLink):
 
     def chainlet_send(self, value=None):
         iter_values = iter(value)
-        base_value = next(iter_values)
+        try:
+            base_value = next(iter_values)
+        except StopIteration:
+            raise chainlink.StopTraversal
         sample_type = type(base_value)
         try:
             merger = self._cache_mapping[sample_type]

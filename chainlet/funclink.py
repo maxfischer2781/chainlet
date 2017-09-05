@@ -41,7 +41,7 @@ from . import chainlink
 
 class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     """
-    Wrapper making a generator act like a ChainLink
+    Wrapper making a function act like a ChainLink
 
     :param slave: the function to wrap
     :param args: positional arguments for the slave
@@ -50,35 +50,32 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     :note: Use the :py:func:`funclet` function if you wish to decorate a
            function to produce FunctionLinks.
 
-    This class wraps a function partially, calling it to perform
-    work when receiving a value and passing on the result. The `slave` can be
-    any object that is callable, and should take at least a named parameter `value`.
+    This class wraps a function (or other callable), calling it to perform
+    work when receiving a value and passing on the result. The ``slave`` can be
+    any object that is callable, and should take at least a named parameter ``value``.
 
     When receiving a value as part of a chain, :py:meth:`send` acts like
-    `slave(value=value, *args, **kwargs)`. Any calls to :py:meth:`throw` and :py:meth:`close`
+    ``slave(value=value, *args, **kwargs)``. Any calls to :py:meth:`throw` and :py:meth:`close`
     are ignored.
     """
     def __init__(self, slave, *args, **kwargs):
+        if args or kwargs:
+            slave = functools.partial(slave, *args, **kwargs)
         super(FunctionLink, self).__init__(slave=slave)
-        # prime slave for receiving send
-        self._wrapped_args = args
-        self._wrapped_kwargs = kwargs
+
+    @staticmethod
+    def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
+        if slave_args or slave_kwargs:
+            return functools.partial(raw_slave, *slave_args, **slave_kwargs)
+        return raw_slave
 
     def chainlet_send(self, value=None):
         """Send a value to this element"""
-        return self.__wrapped__(value=value, *self._wrapped_args, **self._wrapped_kwargs)
+        return self.__wrapped__(value=value)
 
 
 def funclet(function):
     """
     Convert a function to a :py:class:`~chainlink.ChainLink`
     """
-    def linker(*args, **kwargs):
-        """
-        Creates a partially bound function acting as a chainlet.ChainLink
-
-        :rtype: :py:class:`~chainlink.ChainLink`
-        """
-        return FunctionLink(function, *args, **kwargs)
-    functools.update_wrapper(linker, function)
-    return linker
+    return FunctionLink.wraplet()(function)

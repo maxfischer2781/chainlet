@@ -37,9 +37,127 @@ applying a decorator:
     producer >> windowed_average(16) >> consumer
 """
 from __future__ import division, absolute_import
-import functools
+import sys
+import types
 
 from . import chainlink, wrapper
+
+
+def _unpickle_stashed_generator(generator_function, args, kwargs):
+    return StashedGenerator(generator_function, *args, **kwargs)
+
+
+class StashedGenerator(object):
+    """
+    A :term:`generator iterator` which can be copied/pickled before any other operations
+
+    :param generator_function: the source :term:`generator` function
+    :type generator_function: function
+    :param args: positional arguments to pass to ``generator_function``
+    :param kwargs: keyword arguments to pass to ``generator_function``
+
+    This class can be used instead of instantiating a :term:`generator` function.
+    The following two calls will behave the same for all generator operations:
+
+    .. code::
+
+        my_generator(1, 2, 3, foo='bar')
+        StashedGenerator(my_generator, 1, 2, 3, foo='bar')
+
+    However, a :py:class:`StashedGenerator` can be pickled and unpickled before any generator
+    operations are used on it.
+    It explicitly disallows pickling after :py:func:`next`, :py:meth:`send`, :py:meth:`throw` or :py:meth:`close`.
+
+    .. code::
+
+        def parrot(what='Polly says %s'):
+            value = yield
+            while True:
+                value = yield (what % value)
+
+        simon = StashedGenerator(parrot, 'Simon says %s')
+        simon2 = pickle.loads(pickle.dumps(simon))
+        next(simon2)
+        print(simon2.send('Hello'))  # Simon says Hello
+        simon3 = pickle.loads(pickle.dumps(simon2))  # raise TypeError
+    """
+    def __init__(self, generator_function, *args, **kwargs):
+        self._generator_function = generator_function
+        self._args = args
+        self._kwargs = kwargs
+        self._generator = None
+
+    @property
+    def __class__(self):
+        return types.GeneratorType
+
+    def _materialize(self):
+        # create generator first so that we are sure it is working
+        self._generator = _generator = self._generator_function(*self._args, **self._kwargs)
+        # replace all our methods to avoid indirection
+        self.send = _generator.send
+        self.throw = _generator.throw
+        self.close = _generator.close
+        self.__iter__ = _generator.__iter__
+        try:
+            self.__next__ = _generator.__next__
+        except AttributeError:
+            self.next = _generator.next
+        # free references so that things can be garbage collected
+        self._generator_function, self._args, self._kwargs = None, None, None
+
+    def __iter__(self):
+        self._materialize()
+        return iter(self._generator)
+
+    def send(self, arg=None):
+        """
+        send(arg) -> send 'arg' into generator,
+        return next yielded value or raise StopIteration.
+        """
+        self._materialize()
+        return self._generator.send(arg)
+
+    if sys.version_info < (3,):
+        def next(self):
+            """x.next() -> the next value, or raise StopIteration"""
+            return self.send(None)
+    else:
+        def __next__(self):
+            """Implement next(self)"""
+            return self.send(None)
+
+    def throw(self, typ, val=None, tb=None):
+        """
+        throw(typ[,val[,tb]]) -> raise exception in generator,
+        return next yielded value or raise StopIteration.
+        """
+        self._materialize()
+        self._generator.throw(typ, val, tb)
+
+    def close(self):
+        """close() -> raise GeneratorExit inside generator."""
+        self._materialize()
+        self._generator.close()
+
+    # since we fake __class__, pickle cannot find us automatically
+    # __reduce__ is required to explicitly give the class to recover
+    # any instances.
+    # https://bugs.python.org/issue14577
+    def __reduce__(self):
+        if self._generator is not None:
+            raise TypeError('%s objects cannot be pickled after iteration' % type(self).__name__)
+        return _unpickle_stashed_generator, (self._generator_function, self._args, self._kwargs)
+
+    # faking __class__ fetches __reduce_ex__ from the wrong location
+    # in py3.3 and before
+    def __reduce_ex__(self, protocol):
+        return self.__reduce__()
+
+    def __repr__(self):
+        if self._generator is not None:
+            return '%s(%r)' % (type(self).__name__, self._generator)
+        return '%s(%s, *%s, **%s)' % (type(self).__name__, self._generator_function, self._args, self._kwargs)
 
 
 class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
@@ -64,6 +182,10 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
         if prime:
             next(self.__wrapped__)
 
+    @staticmethod
+    def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
+        return StashedGenerator(raw_slave, *slave_args, **slave_kwargs)
+
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
         return self.__wrapped__.send(value)
@@ -86,7 +208,7 @@ def genlet(generator_function=None, prime=True):
     :param prime: advance the generator to the next/first yield
     :type prime: bool
 
-    When used as a decorator, this function can also be called with keywords.
+    When used as a decorator, this function can also be called with and without keywords.
 
     .. code:: python
 
@@ -102,18 +224,15 @@ def genlet(generator_function=None, prime=True):
             "Chainlet that produces a value"
             while True:
                 yield time.time()
+
+        @genlet(True)
+        def read(iterable):
+            "Chainlet that reads from an iterable"
+            for item in iterable:
+                yield item
     """
     if generator_function is None:
-        return functools.partial(genlet, prime=prime)
-    elif isinstance(generator_function, bool):
-        return functools.partial(genlet, prime=generator_function)
-
-    def linker(*args, **kwargs):
-        """
-        Creates a new generator instance acting as a chainlet.ChainLink
-
-        :rtype: :py:class:`~chainlink.ChainLink`
-        """
-        return GeneratorLink(generator_function(*args, **kwargs), prime=prime)
-    functools.update_wrapper(linker, generator_function)
-    return linker
+        return GeneratorLink.wraplet(prime=prime)
+    elif not callable(generator_function):
+        return GeneratorLink.wraplet(prime=generator_function)
+    return GeneratorLink.wraplet(prime=prime)(generator_function)
