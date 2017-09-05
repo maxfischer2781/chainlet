@@ -9,7 +9,8 @@ except SyntaxError:
     from .python3 import throw_method
 
 try:
-    from .python26 import *
+    _compat_sub_module = 'python%d_%d' % sys.version_info[:2]
+    __import__(_compat_sub_module)
 except ImportError:
     pass
 
