@@ -104,11 +104,14 @@ class WrapperMixin(object):
             # e.g. function and partial.
             # python2 pickle performs the equivalent of getattr(sys.modules[obj.__module__, obj.__name__]
             # which does not allow dotted name lookups. To work around this, we place the slave into the
-            # module, globally, using the dotted name *explicitly*. As dotted names are not valid identifiers,
+            # module, globally, using the qualified name *explicitly*. As qualified names are not valid identifiers,
             # this will not create a collision unless someone tries to do the same trick.
-            # While 3.4 adds support for using __qualname__, that is *only* for protocol 4. Older
-            # protocols still require __name__.
             if sys.version_info[:2] <= (3, 4):
+                # While 3.4 adds support for using __qualname__, that is *only* for protocol 4. Older
+                # protocols still require __name__. However, 3.4 *explicitly* disallows using dotted names,
+                # which defeats the obvious way of injecting the proper dotted name. Instead, an illegal name
+                # using : in place of . is used, which should also not conflict.
+                name_separator = '.' if sys.version_info[:2] != (3, 4) else ':'
                 # Make sure we actually register the correct entity
                 # Since we are only working with __name__, the slave could be defined
                 # in an inner scope. In this case, registering it in the global namespace
@@ -122,7 +125,7 @@ class WrapperMixin(object):
                 #   Neither slave nor Wrapper exist in the namespace yet (they are only bound *after*
                 #   the wraplet returns). No object may exist with the same name.
                 if getattr(sys.modules[raw_slave.__module__], raw_slave.__name__, raw_slave) is raw_slave:
-                    setattr(sys.modules[raw_slave.__module__], raw_slave.__name__ + '._raw_slave', raw_slave)
-                    raw_slave.__name__ += '._raw_slave'
+                    raw_slave.__name__ += name_separator + '_raw_slave'
+                    setattr(sys.modules[raw_slave.__module__], raw_slave.__name__, raw_slave)
             return Wraplet
         return wrapper_factory
