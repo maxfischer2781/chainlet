@@ -47,7 +47,7 @@ def _unpickle_stashed_generator(generator_function, args, kwargs):
     return StashedGenerator(generator_function, *args, **kwargs)
 
 
-class StashedGenerator(object):
+class StashedGenerator(object):  # pylint:disable=too-many-instance-attributes
     """
     A :term:`generator iterator` which can be copied/pickled before any other operations
 
@@ -106,11 +106,11 @@ class StashedGenerator(object):
         # free references so that things can be garbage collected
         self._generator_function, self._args, self._kwargs = None, None, None
 
-    def __iter__(self):
+    def __iter__(self):  # pylint:disable=method-hidden
         self._materialize()
         return iter(self._generator)
 
-    def send(self, arg=None):
+    def send(self, arg=None):  # pylint:disable=method-hidden
         """
         send(arg) -> send 'arg' into generator,
         return next yielded value or raise StopIteration.
@@ -119,15 +119,15 @@ class StashedGenerator(object):
         return self._generator.send(arg)
 
     if sys.version_info < (3,):
-        def next(self):
+        def next(self):  # pylint:disable=method-hidden
             """x.next() -> the next value, or raise StopIteration"""
             return self.send(None)
     else:
-        def __next__(self):
+        def __next__(self):  # noqa
             """Implement next(self)"""
             return self.send(None)
 
-    def throw(self, typ, val=None, tb=None):
+    def throw(self, typ, val=None, tb=None):  # pylint:disable=method-hidden
         """
         throw(typ[,val[,tb]]) -> raise exception in generator,
         return next yielded value or raise StopIteration.
@@ -135,7 +135,7 @@ class StashedGenerator(object):
         self._materialize()
         self._generator.throw(typ, val, tb)
 
-    def close(self):
+    def close(self):  # pylint:disable=method-hidden,invalid-name
         """close() -> raise GeneratorExit inside generator."""
         self._materialize()
         self._generator.close()
