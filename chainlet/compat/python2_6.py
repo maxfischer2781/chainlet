@@ -1,6 +1,3 @@
-import sys
-if sys.version_info[:2] != (2, 6):
-    raise ImportError
 import copy_reg
 import functools
 

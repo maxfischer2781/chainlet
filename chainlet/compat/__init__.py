@@ -8,15 +8,18 @@ try:
 except SyntaxError:
     from .python3 import throw_method
 
+# load optional minor-version compatibility fixes
+# this currently works via side-effects only
 try:
     _compat_sub_module = 'python%d_%d' % sys.version_info[:2]
     __import__(_compat_sub_module)
 except ImportError:
     pass
 
-compat_version = sys.version_info
+#: Python version compatibility was established for
+COMPAT_VERSION = sys.version_info
 
 __all__ = [
-    'compat_version',
+    'COMPAT_VERSION',
     'throw_method'
 ]
