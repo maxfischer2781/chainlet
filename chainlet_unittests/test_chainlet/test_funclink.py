@@ -31,6 +31,11 @@ def no_defaults(*args, **kwargs):
     return args, kwargs
 
 
+def pickle_copy(obj, proto):
+    dump = pickle.dumps(obj, proto)
+    return pickle.loads(dump)
+
+
 class TestFunctionLink(unittest.TestCase):
     @staticmethod
     def _get_test_iterable():
@@ -86,8 +91,8 @@ class TestFunctionLink(unittest.TestCase):
                 self._subtest_cloned_result(native, copy.deepcopy(native))
             for proto in range(pickle.HIGHEST_PROTOCOL):
                 with self.subTest(case, pickle_protocol=proto):
-                    self.assertEqual(native.slave(), pickle.loads(pickle.dumps(native, proto)).slave())
-                    self._subtest_cloned_result(native, pickle.loads(pickle.dumps(native, proto)))
+                    self.assertEqual(native.slave(), pickle_copy(native, proto).slave())
+                    self._subtest_cloned_result(native, pickle_copy(native, proto))
 
     def _subtest_cloned_result(self, original, clone):
         self.assertIsNot(original, clone)
