@@ -11,7 +11,7 @@ except SyntaxError:
 # load optional minor-version compatibility fixes
 # this currently works via side-effects only
 try:
-    _compat_sub_module = 'python%d_%d' % sys.version_info[:2]
+    _compat_sub_module = __name__ + '.python%d_%d' % sys.version_info[:2]
     __import__(_compat_sub_module)
 except ImportError:
     pass
