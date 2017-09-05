@@ -108,7 +108,7 @@ class WrapperMixin(object):
             # this will not create a collision unless someone tries to do the same trick.
             # While 3.4 adds support for using __qualname__, that is *only* for protocol 4. Older
             # protocols still require __name__.
-            if sys.version_info <= (3, 4):
+            if sys.version_info[:2] <= (3, 4):
                 # Make sure we actually register the correct entity
                 # Since we are only working with __name__, the slave could be defined
                 # in an inner scope. In this case, registering it in the global namespace
