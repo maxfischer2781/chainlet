@@ -20,6 +20,7 @@ def pingpong(value):
 def new_pingpong():
     return chainlet.funclink.FunctionLink(pingpong)
 
+
 @chainlet.funclet
 def pingponglet(value):
     """Return a value unchanged"""
