@@ -299,23 +299,6 @@ class FlatChain(CompoundLink):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class GraphLink(CompoundLink):  # pylint: disable=abstract-method
-    """
-    A branching sequence of chainlets, with forking, concurrency and joining between elements
-
-    :param elements: the chainlets making up this chain
-    :type elements: iterable[:py:class:`~.ChainLink`]
-
-    Elements of a graph are traversed concurrently.
-    Each data chunk may potentially be handled by multiple elements in parallel.
-
-    :note: Traversal of graphs assumes immutability of data, and will not create copies when branching.
-           Elements must actively copy any mutable data they modify to avoid side effects.
-    """
-    chain_join = False
-    chain_fork = True
-
-
 class Bundle(CompoundLink):
     """
     A parallel sequence of chainlets, with each element ranked the same
