@@ -316,7 +316,7 @@ class GraphLink(CompoundLink):  # pylint: disable=abstract-method
     chain_fork = True
 
 
-class Bundle(GraphLink):
+class Bundle(CompoundLink):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
@@ -362,10 +362,13 @@ class Bundle(GraphLink):
         return repr(self.elements)
 
 
-class MetaChain(GraphLink):
+class MetaChain(CompoundLink):
     """
     A mixed sequence of linear and parallel chainlets
     """
+    chain_join = False
+    chain_fork = True
+
     def __init__(self, elements):
         super(MetaChain, self).__init__(elements)
         assert self._forks
