@@ -435,9 +435,6 @@ class FlatChain(MetaChain):
             value = element.chainlet_send(value)
         return value
 
-    def __repr__(self):
-        return ' >> '.join(repr(elem) for elem in self.elements)
-
 
 def parallel_chain_converter(element):
     if isinstance(element, (tuple, list, set)):
