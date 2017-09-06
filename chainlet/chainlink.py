@@ -310,18 +310,6 @@ class GraphLink(CompoundLink):  # pylint: disable=abstract-method
             except (StopIteration, _ElementExhausted):
                 break
 
-    def send(self, value=None):
-        """Send a value to this element for processing"""
-        # we do one explicit loop to keep overhead low...
-        result = list(self.chainlet_send(value))
-        if result:
-            return result
-        # ...then do the correct loop if needed
-        while True:
-            result = list(self.chainlet_send(value))
-            if result:
-                return result
-
 
 class Bundle(GraphLink):
     """
