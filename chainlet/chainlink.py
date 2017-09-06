@@ -143,7 +143,7 @@ class ChainLink(object):
         :param children: child or children to bind
         :type children: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: FlatChain, Bundle or MetaChain
+        :rtype: FlatChain, Bundle or Chain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(self, children)
@@ -159,7 +159,7 @@ class ChainLink(object):
         :param parents: parent or parents to bind
         :type parents: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: FlatChain, Bundle or MetaChain
+        :rtype: FlatChain, Bundle or Chain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(parents, self)
@@ -272,7 +272,7 @@ class CompoundLink(ChainLink):
 
 class Bundle(CompoundLink):
     """
-    A parallel sequence of chainlets, with each element ranked the same
+    A group of chainlets that concurrently process each :term:`data chunk`
     """
     chain_join = False
     chain_fork = True
@@ -316,15 +316,15 @@ class Bundle(CompoundLink):
         return repr(self.elements)
 
 
-class MetaChain(CompoundLink):
+class Chain(CompoundLink):
     """
-    A mixed sequence of linear and parallel chainlets
+    A group of chainlets that sequentially process each :term:`data chunk`
     """
     chain_join = False
     chain_fork = True
 
     def __init__(self, elements):
-        super(MetaChain, self).__init__(elements)
+        super(Chain, self).__init__(elements)
         assert self._forks
 
     @property
@@ -410,19 +410,9 @@ class MetaChain(CompoundLink):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class FlatChain(MetaChain):
+class FlatChain(Chain):
     """
-    A linear sequence of chainlets, with each element preceding the next
-
-    :param elements: the sequence of chainlets making up this chain
-    :type elements: iterable[:py:class:`~.ChainLink`]
-
-    Elements of a sequence are traversed in order for processing values.
-    Each data chunk is sequentially processed by each element.
-
-    Each :py:class:`~.FlatChain` can be flexibly extended:
-    linking it to another :py:class:`~.FlatChain` or primitive :py:class:`~.ChainLink` creates a flat
-    :py:class:`~.FlatChain` instead of nesting.
+    A specialised :py:class:`Chain` which never forks or joins internally
     """
     chain_join = False
     chain_fork = False
@@ -453,7 +443,7 @@ class ChainLinker(object):
         _elements = []
         for element in elements:
             element = self.convert(element)
-            if isinstance(element, (FlatChain, MetaChain)):
+            if isinstance(element, (FlatChain, Chain)):
                 _elements.extend(element.elements)
             elif hasattr(element, 'elements') and not element.elements:
                 pass
@@ -462,7 +452,7 @@ class ChainLinker(object):
         if len(_elements) == 1:
             return _elements[0]
         if any(element.chain_fork for element in _elements):
-            return MetaChain(_elements)
+            return Chain(_elements)
         return FlatChain(_elements)
 
     def convert(self, element):
