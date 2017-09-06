@@ -325,7 +325,7 @@ class Chain(CompoundLink):
 
     def __init__(self, elements):
         super(Chain, self).__init__(elements)
-        assert self._forks
+        self.chain_fork = self._forks
 
     @property
     def _forks(self):
@@ -334,7 +334,7 @@ class Chain(CompoundLink):
                 return True
             elif element.chain_join:
                 return False
-        return True
+        return False
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
