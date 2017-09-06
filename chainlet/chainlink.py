@@ -357,19 +357,6 @@ class MetaChain(GraphLink):
     """
     A mixed sequence of linear and parallel chainlets
     """
-    def __init__(self, elements):
-        _elements = []
-        _elements_buffer = []
-        for element in elements:
-            if isinstance(element, Bundle):
-                if _elements_buffer:
-                    _elements.append(FlatChain(tuple(_elements_buffer)))
-                    _elements_buffer = []
-                _elements.append(element)
-            else:
-                _elements_buffer.append(element)
-        super(MetaChain, self).__init__(tuple(elements))
-
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
