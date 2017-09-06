@@ -169,6 +169,11 @@ class ChainLink(object):
         return self >> children
 
     def __iter__(self):
+        if self.chain_fork:
+            return self._iter_fork()
+        return self._iter_flat()
+
+    def _iter_flat(self):
         while True:
             try:
                 yield self.chainlet_send(None)
@@ -176,6 +181,15 @@ class ChainLink(object):
                 if err.return_value is not END_OF_CHAIN:
                     yield err.return_value
             except StopIteration:
+                break
+
+    def _iter_fork(self):
+        while True:
+            try:
+                result = list(self.chainlet_send(None))
+                if result:
+                    yield result
+            except (StopIteration, _ElementExhausted):
                 break
 
     def __next__(self):
