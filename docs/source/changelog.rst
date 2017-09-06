@@ -13,6 +13,12 @@ v1.2.0a
 
         * Instances of ``FunctionLink`` can be copied and pickled.
 
+        * Instances of ``GeneratorLink`` can be copied and pickled.
+
+    **Fixes**
+
+        * Chains containing any ``chainlet_fork`` elements but no ``Bundle`` are properly built
+
 v1.1.0 2017-06-08
 -----------------
 
