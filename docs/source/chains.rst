@@ -48,8 +48,8 @@ Both ``next(element)`` and ``element.send(None)`` form the *public* interface of
 They take care of unwinding chain complexities, such as multiple paths and skipping of values.
 Custom elements should implement :py:meth:`chainlet.ChainLink.chainlet_send` to change how data is processed.
 
-Linear Chains -- Processing Sequence
-------------------------------------
+Linear Chains -- Processing Chain
+---------------------------------
 
 The simplest compound object is a *linear chain*, which is a flat sequence of elements.
 Data sent to the chain is transformed iteratively:
