@@ -143,7 +143,7 @@ class ChainLink(object):
         :param children: child or children to bind
         :type children: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: LinearChain, ParallelChain or MetaChain
+        :rtype: FlatChain, Bundle or MetaChain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(self, children)
@@ -159,7 +159,7 @@ class ChainLink(object):
         :param parents: parent or parents to bind
         :type parents: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: LinearChain, ParallelChain or MetaChain
+        :rtype: FlatChain, Bundle or MetaChain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(parents, self)
@@ -240,9 +240,19 @@ class CompoundLink(ChainLink):
         raise NotImplementedError
 
 
-class LinearChain(CompoundLink):
+class FlatChain(CompoundLink):
     """
     A linear sequence of chainlets, with each element preceding the next
+
+    :param elements: the sequence of chainlets making up this chain
+    :type elements: iterable[:py:class:`~.ChainLink`]
+
+    Elements of a sequence are traversed in order for processing values.
+    Each data chunk is sequentially processed by each element.
+
+    Each :py:class:`~.FlatChain` can be flexibly extended:
+    linking it to another :py:class:`~.FlatChain` or primitive :py:class:`~.ChainLink` creates a flat
+    :py:class:`~.FlatChain` instead of nesting.
     """
     chain_join = False
     chain_fork = False
@@ -259,9 +269,18 @@ class LinearChain(CompoundLink):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class ConcurrentChain(CompoundLink):  # pylint: disable=abstract-method
+class GraphLink(CompoundLink):  # pylint: disable=abstract-method
     """
-    A collection of concurrent chainlets, with multiple elements running at the same time
+    A branching sequence of chainlets, with forking, concurrency and joining between elements
+
+    :param elements: the chainlets making up this chain
+    :type elements: iterable[:py:class:`~.ChainLink`]
+
+    Elements of a graph are traversed concurrently.
+    Each data chunk may potentially be handled by multiple elements in parallel.
+
+    :note: Traversal of graphs assumes immutability of data, and will not create copies when branching.
+           Elements must actively copy any mutable data they modify to avoid side effects.
     """
     chain_join = False
     chain_fork = True
@@ -291,7 +310,7 @@ class ConcurrentChain(CompoundLink):  # pylint: disable=abstract-method
         return repr(self.elements)
 
 
-class ParallelChain(ConcurrentChain):
+class Bundle(GraphLink):
     """
     A parallel sequence of chainlets, with each element ranked the same
     """
@@ -334,7 +353,7 @@ class ParallelChain(ConcurrentChain):
             raise _ElementExhausted
 
 
-class MetaChain(ConcurrentChain):
+class MetaChain(GraphLink):
     """
     A mixed sequence of linear and parallel chainlets
     """
@@ -342,9 +361,9 @@ class MetaChain(ConcurrentChain):
         _elements = []
         _elements_buffer = []
         for element in elements:
-            if isinstance(element, ParallelChain):
+            if isinstance(element, Bundle):
                 if _elements_buffer:
-                    _elements.append(LinearChain(tuple(_elements_buffer)))
+                    _elements.append(FlatChain(tuple(_elements_buffer)))
                     _elements_buffer = []
                 _elements.append(element)
             else:
@@ -427,7 +446,7 @@ class MetaChain(ConcurrentChain):
 
 def parallel_chain_converter(element):
     if isinstance(element, (tuple, list, set)):
-        return ParallelChain(element)
+        return Bundle(element)
     raise TypeError
 
 
@@ -442,7 +461,7 @@ class ChainLinker(object):
         _elements = []
         for element in elements:
             element = self.convert(element)
-            if isinstance(element, (LinearChain, MetaChain)):
+            if isinstance(element, (FlatChain, MetaChain)):
                 _elements.extend(element.elements)
             elif hasattr(element, 'elements') and not element.elements:
                 pass
@@ -450,9 +469,9 @@ class ChainLinker(object):
                 _elements.append(element)
         if len(_elements) == 1:
             return _elements[0]
-        if any(isinstance(element, ParallelChain) for element in _elements):
+        if any(isinstance(element, Bundle) for element in _elements):
             return MetaChain(_elements)
-        return LinearChain(_elements)
+        return FlatChain(_elements)
 
     def convert(self, element):
         for converter in self.converters:
