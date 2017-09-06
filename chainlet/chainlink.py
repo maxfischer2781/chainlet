@@ -187,6 +187,11 @@ class ChainLink(object):
 
     def send(self, value=None):
         """Send a value to this element for processing"""
+        if self.chain_fork:
+            return self._send_fork(value)
+        return self._send_flat(value)
+
+    def _send_flat(self, value):
         # we do one explicit loop to keep overhead low...
         try:
             return self.chainlet_send(value)
@@ -200,6 +205,17 @@ class ChainLink(object):
                 except StopTraversal as err:
                     if err.return_value is not END_OF_CHAIN:
                         return err.return_value
+
+    def _send_fork(self, value):
+        # we do one explicit loop to keep overhead low...
+        result = list(self.chainlet_send(value))
+        if result:
+            return result
+        # ...then do the correct loop if needed
+        while True:
+            result = list(self.chainlet_send(value))
+            if result:
+                return result
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
