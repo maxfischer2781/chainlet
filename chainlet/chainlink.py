@@ -357,6 +357,19 @@ class MetaChain(GraphLink):
     """
     A mixed sequence of linear and parallel chainlets
     """
+    def __init__(self, elements):
+        super(MetaChain, self).__init__(elements)
+        assert self._forks
+
+    @property
+    def _forks(self):
+        for element in self.elements:
+            if element.chain_fork:
+                return True
+            elif element.chain_join:
+                return False
+        return True
+
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
