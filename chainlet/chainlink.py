@@ -325,11 +325,13 @@ class Chain(CompoundLink):
 
     def __init__(self, elements):
         super(Chain, self).__init__(elements)
-        self.chain_fork = self._forks
+        self.chain_fork = self._chain_forks(elements)
 
-    @property
-    def _forks(self):
-        for element in self.elements:
+    @staticmethod
+    def _chain_forks(elements):
+        """Detect whether a sequence of elements leads to a fork of streams"""
+        # we are only interested in the result, so unwind from the end
+        for element in reversed(elements):
             if element.chain_fork:
                 return True
             elif element.chain_join:
