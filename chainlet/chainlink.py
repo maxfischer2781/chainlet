@@ -270,35 +270,6 @@ class CompoundLink(ChainLink):
         raise NotImplementedError
 
 
-class FlatChain(CompoundLink):
-    """
-    A linear sequence of chainlets, with each element preceding the next
-
-    :param elements: the sequence of chainlets making up this chain
-    :type elements: iterable[:py:class:`~.ChainLink`]
-
-    Elements of a sequence are traversed in order for processing values.
-    Each data chunk is sequentially processed by each element.
-
-    Each :py:class:`~.FlatChain` can be flexibly extended:
-    linking it to another :py:class:`~.FlatChain` or primitive :py:class:`~.ChainLink` creates a flat
-    :py:class:`~.FlatChain` instead of nesting.
-    """
-    chain_join = False
-    chain_fork = False
-
-    def chainlet_send(self, value=None):
-        for element in self.elements:
-            # a StopTraversal may be raised here
-            # we do NOT catch it, but let it bubble up instead
-            # whoever catches it can extract a potential early return value
-            value = element.chainlet_send(value)
-        return value
-
-    def __repr__(self):
-        return ' >> '.join(repr(elem) for elem in self.elements)
-
-
 class Bundle(CompoundLink):
     """
     A parallel sequence of chainlets, with each element ranked the same
@@ -434,6 +405,35 @@ class MetaChain(CompoundLink):
                     yield err.return_value
             except StopIteration:
                 raise _ElementExhausted
+
+    def __repr__(self):
+        return ' >> '.join(repr(elem) for elem in self.elements)
+
+
+class FlatChain(CompoundLink):
+    """
+    A linear sequence of chainlets, with each element preceding the next
+
+    :param elements: the sequence of chainlets making up this chain
+    :type elements: iterable[:py:class:`~.ChainLink`]
+
+    Elements of a sequence are traversed in order for processing values.
+    Each data chunk is sequentially processed by each element.
+
+    Each :py:class:`~.FlatChain` can be flexibly extended:
+    linking it to another :py:class:`~.FlatChain` or primitive :py:class:`~.ChainLink` creates a flat
+    :py:class:`~.FlatChain` instead of nesting.
+    """
+    chain_join = False
+    chain_fork = False
+
+    def chainlet_send(self, value=None):
+        for element in self.elements:
+            # a StopTraversal may be raised here
+            # we do NOT catch it, but let it bubble up instead
+            # whoever catches it can extract a potential early return value
+            value = element.chainlet_send(value)
+        return value
 
     def __repr__(self):
         return ' >> '.join(repr(elem) for elem in self.elements)
