@@ -410,7 +410,7 @@ class MetaChain(CompoundLink):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
-class FlatChain(CompoundLink):
+class FlatChain(MetaChain):
     """
     A linear sequence of chainlets, with each element preceding the next
 
