@@ -306,9 +306,6 @@ class GraphLink(CompoundLink):  # pylint: disable=abstract-method
             if result:
                 return result
 
-    def __repr__(self):
-        return repr(self.elements)
-
 
 class Bundle(GraphLink):
     """
@@ -351,6 +348,9 @@ class Bundle(GraphLink):
                     exhausted_elements += 1
         if exhausted_elements and exhausted_elements == len(self.elements):
             raise _ElementExhausted
+
+    def __repr__(self):
+        return repr(self.elements)
 
 
 class MetaChain(GraphLink):
