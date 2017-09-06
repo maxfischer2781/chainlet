@@ -315,15 +315,6 @@ class GraphLink(CompoundLink):  # pylint: disable=abstract-method
     chain_join = False
     chain_fork = True
 
-    def __iter__(self):
-        while True:
-            try:
-                result = list(self.chainlet_send(None))
-                if result:
-                    yield result
-            except (StopIteration, _ElementExhausted):
-                break
-
 
 class Bundle(GraphLink):
     """
