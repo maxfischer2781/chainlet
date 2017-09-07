@@ -98,6 +98,14 @@ class ChainIteration(unittest.TestCase):
         expect_next = iter(expected)
         for _ in range(len(expected)):
             self.assertEqual(next(chain_next), next(expect_next))
+        with self.assertRaises(StopIteration):
+            next(expect_next)
+        with self.assertRaises(StopIteration):
+            next(chain_next)
+        with self.assertRaises(StopIteration):
+            next(expect_iter)
+        with self.assertRaises(StopIteration):
+            next(chain_iter)
 
     def test_fork_join(self):
         """Fork and join as `source >> (child_a, child_b) >> join` => [1, 2, ...]"""
