@@ -99,7 +99,6 @@ class ChainIteration(unittest.TestCase):
         for _ in range(len(expected)):
             self.assertEqual(next(chain_next), next(expect_next))
 
-    @unittest.expectedFailure
     def test_fork_join(self):
         """Fork and join as `source >> (child_a, child_b) >> join` => [1, 2, ...]"""
         elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
