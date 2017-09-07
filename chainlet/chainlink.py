@@ -344,10 +344,13 @@ class Chain(CompoundLink):
 
     def send(self, value=None):
         """Send a value to this element for processing"""
-        result = super(Chain, self).send(value)
-        if self.chain_fork:
-            return result
-        return next(iter(result))
+        try:
+            result = super(Chain, self).send(value)
+            if self.chain_fork:
+                return result
+            return next(iter(result))
+        except _ElementExhausted:
+            raise StopIteration
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
