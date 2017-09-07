@@ -433,9 +433,9 @@ class FlatChain(Chain):
     chain_join = False
     chain_fork = False
 
-    __iter__ = ChainLink._iter_flat
-
-    send = ChainLink._send_flat
+    # short circuit to the flat iter/send, since this is all we ever need
+    __iter__ = ChainLink._iter_flat  # pylint:disable=protected-access
+    send = ChainLink._send_flat  # pylint:disable=protected-access
 
     def chainlet_send(self, value=None):
         for element in self.elements:

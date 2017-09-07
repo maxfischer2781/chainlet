@@ -17,7 +17,7 @@ try:
 except ImportError:
     COMPAT_SUBMODULE = None
 
-#: Python version compatibility was established for
+#: Python version for which compatibility has been established
 COMPAT_VERSION = sys.version_info
 
 __all__ = [
