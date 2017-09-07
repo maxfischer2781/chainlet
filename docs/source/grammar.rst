@@ -22,25 +22,26 @@ This example links elements to form a directed graph:
         d -> g
     }
 
-Single Link
------------
+Single Link - Pairs
+-------------------
 
 The most fundamental operation is the directed link between parent and child.
-The direction of the link is defined by the operator.
+The direction of the link is defined by the direction of the operator.
 
 .. code:: python
 
     parent >> child
     child << parent
 
-This creates and returns a chain linking parent and child.
+This creates and returns a :term:`chain` linking parent and child.
 
-Chained Link
-------------
+Chained Link - Flat Chains
+--------------------------
 
-A chain can be linked again to extend the chain.
-Adding a parent to a chain links it to the initial parent, while a new child is linked to the initial child.
-Chains do not preserve syntactic orientation, so a ``>>``-linked chain can be linked via ``<<`` and vice versa.
+A pair can be linked again to extend the :term:`chain`.
+Adding a parent to a :term:`chain` links it to the initial parent, while a new child is linked to the initial child.
+Note that :term:`chains <chain>` preserve only *logical*, but not *syntactic* orientation:
+a ``>>``-linked chain can be extended via ``<<`` and vice versa.
 
 .. code:: python
 
@@ -60,12 +61,16 @@ Chains represent only the link they have been created with.
 Subsequent changes and links are not propagated.
 Each of the objects ``chain_a``, ``chain_b`` and ``chain_c`` represent another part of the chain.
 
-.. code::
+.. code:: python
 
-               /-- chain_a --\
-    /------------- chain_b --\
-    /------------- chain_c ------------\
-    parent2 >> parent >> child >> child2
+    chain_d = parent2 >> parent >> child >> child2
+    #                    \-- chain_a --/
+    #         \------------- chain_b --/
+    #         \------------- chain_c ------------/
+
+:note: Linking automatically flattens :term:`chains <chain>` to create the longest possible :term:`chain`.
+       This preserves equality but not identity of sub-chains.
+       This is similar to using the ``+`` operator on a :py:class:`list`.
 
 Links follow standard operation order, i.e. they are evaluated from left to right.
 This can be confusing when mixing ``>>`` and ``<<`` in a single chain.
@@ -75,12 +80,15 @@ The following chain is equivalent to ``chain_c``.
 
     chain_d = child << parent >> child2 << parent2
 
+:danger: Mixing ``<<`` and ``>>`` is generally a bad idea.
+         The use of ``>>`` is suggested, as it conforms to public and private interface implementations.
+
 Forking and Joining Links
 -------------------------
 
-Any node can have an arbitrary number of parents and children.
-This allows forking and joining elements.
-Simply use a :py:func:`tuple`, :py:func:`list` or :py:func:`set` as child or parent.
+Any :term:`chainlink` can have an arbitrary number of parents and children.
+This allows :term:`forking` and :term:`joining` the :term:`data stream`.
+Simply use a :py:func:`tuple`, :py:func:`list` or :py:func:`set` as child or parent [#typefork]_.
 
 .. code:: python
 
@@ -123,3 +131,5 @@ This allows you to use comprehensions and calls to generate forks and joins dyna
 
 .. [#linkop] These are the ``__rshift__`` and ``__lshift__`` operators.
              Overwriting these operators on objects changes their linking behaviour.
+
+.. [#typefork] There may be additional implications to using different types in the future.
