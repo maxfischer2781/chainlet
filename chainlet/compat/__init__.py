@@ -11,10 +11,11 @@ except SyntaxError:
 # load optional minor-version compatibility fixes
 # this currently works via side-effects only
 try:
-    _compat_sub_module = __name__ + '.python%d_%d' % sys.version_info[:2]
-    __import__(_compat_sub_module)
+    #: submodule implementing minor version compatibility
+    COMPAT_SUBMODULE = __name__ + '.python%d_%d' % tuple(sys.version_info[:2])
+    __import__(COMPAT_SUBMODULE)
 except ImportError:
-    pass
+    COMPAT_SUBMODULE = None
 
 #: Python version compatibility was established for
 COMPAT_VERSION = sys.version_info
