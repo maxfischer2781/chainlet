@@ -338,6 +338,10 @@ class Chain(CompoundLink):
                 return False
         return False
 
+    def _iter_flat(self):
+        for item in self._iter_fork():
+            yield item[0]
+
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
@@ -418,6 +422,8 @@ class FlatChain(Chain):
     """
     chain_join = False
     chain_fork = False
+
+    __iter__ = ChainLink._iter_flat
 
     def chainlet_send(self, value=None):
         for element in self.elements:
