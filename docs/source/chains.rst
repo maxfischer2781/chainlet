@@ -59,7 +59,7 @@ Once all elements have been traversed, the result is returned.
 .. graphviz::
 
     digraph g {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         compound=true;
         subgraph cluster_c {
             ranksep=0;
@@ -90,7 +90,7 @@ In specific, the return value of the element *before* the fork is passed to each
 .. graphviz::
 
     digraph g {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         compound=true;
         a1 [shape=box, style=rounded, label=""];
         a1 -> a1 [label=send];
@@ -157,7 +157,7 @@ For the data flow, ``f`` is visited *separately* for the results from ``c`` and 
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> b
         b -> c -> f1
         b -> d -> e -> f2

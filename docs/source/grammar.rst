@@ -14,7 +14,7 @@ This example links elements to form a directed graph:
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> b
         b -> c -> d
         b -> e -> f
@@ -92,7 +92,7 @@ The resulting chains are actually fully featured, directed graphs.
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> d
         b -> c -> d
     }
@@ -100,7 +100,7 @@ The resulting chains are actually fully featured, directed graphs.
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> b -> c
         a -> d
     }
@@ -115,7 +115,7 @@ This allows you to use comprehensions and calls to generate forks and joins dyna
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> "node(1)"
         a -> "node(2)"
         a -> "node(3)"

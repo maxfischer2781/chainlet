@@ -32,7 +32,7 @@ However, the *first* traversal of ``g >> h`` may or may not occur before ``e >> 
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR, splines=lines]
+        graph [rankdir=LR, splines=lines, bgcolor="transparent"]
         a -> b
         b -> c -> d -> g [color=red]
         b -> e -> f -> g [color=blue]
