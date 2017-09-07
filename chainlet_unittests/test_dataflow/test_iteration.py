@@ -105,9 +105,9 @@ class ChainIteration(unittest.TestCase):
         for elements in itertools.product(elements, repeat=2):
             with self.subTest(elements=elements):
                 initials = (0, 15, -15, 200, -200, -1E6, +1E6)
-                expected = [initial + sum(element.value for element in elements) for initial in initials]
+                expected = [2 * initial + sum(element.value for element in elements) for initial in initials]
                 a, b = elements
 
                 def factory():
                     return produce(initials) >> (a, b) >> MergeLink()
-                self._test_iter(factory, expected)
+                self._test_iter(factory, expected, parallel=True)
