@@ -40,7 +40,7 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertNotEqual(chain_a_parent_sub, chain_a_parent_full)
 
     def test_single(self):
-        """Empty link as () >> child_a"""
+        """Empty link as `() >> child_a`"""
         chainlets = [NamedChainlet(idx) for idx in range(3)]
         for singlet in chainlets:
             for empty in (FlatChain(()), Bundle(()), (), set(), [], set()):
