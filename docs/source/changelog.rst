@@ -15,6 +15,22 @@ v1.2.0a
 
         * Instances of ``GeneratorLink`` can be copied and pickled.
 
+    **Major Changes**
+
+        * Renamed compound chains and simplified inheritance to better reflect their structure:
+
+            * ``Chain`` has been renamed to ``CompoundLink``
+
+            * ``ConcurrentChain`` has been removed
+
+            * ``MetaChain`` has been renamed to ``Chain``
+
+            * ``LinearChain`` has been renamed to ``FlatChain``
+
+            * ``ParallelChain`` has been renamed to ``Bundle``
+
+        * A ``Chain`` that never forks or definitely joins yields raw data chunks, instead of nesting each in a ``list``
+
     **Fixes**
 
         * Chains containing any ``chainlet_fork`` elements but no ``Bundle`` are properly built

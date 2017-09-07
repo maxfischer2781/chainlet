@@ -205,7 +205,7 @@ class ChainLink(object):
             return self._send_fork(value)
         return self._send_flat(value)
 
-    def _send_flat(self, value):
+    def _send_flat(self, value=None):
         # we do one explicit loop to keep overhead low...
         try:
             return self.chainlet_send(value)
@@ -220,7 +220,7 @@ class ChainLink(object):
                     if err.return_value is not END_OF_CHAIN:
                         return err.return_value
 
-    def _send_fork(self, value):
+    def _send_fork(self, value=None):
         # we do one explicit loop to keep overhead low...
         result = list(self.chainlet_send(value))
         if result:
@@ -342,6 +342,13 @@ class Chain(CompoundLink):
         for item in self._iter_fork():
             yield item[0]
 
+    def send(self, value=None):
+        """Send a value to this element for processing"""
+        result = super(Chain, self).send(value)
+        if self.chain_fork:
+            return result
+        return next(iter(result))
+
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         values = [value]
@@ -424,6 +431,8 @@ class FlatChain(Chain):
     chain_fork = False
 
     __iter__ = ChainLink._iter_flat
+
+    send = ChainLink._send_flat
 
     def chainlet_send(self, value=None):
         for element in self.elements:
