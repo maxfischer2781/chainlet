@@ -15,6 +15,8 @@ v1.2.0a
 
         * Instances of ``GeneratorLink`` can be copied and pickled.
 
+        * Subchains can be extracted from a ``Chain`` via slicing.
+
     **Major Changes**
 
         * Renamed compound chains and simplified inheritance to better reflect their structure:
@@ -30,6 +32,8 @@ v1.2.0a
             * ``ParallelChain`` has been renamed to ``Bundle``
 
         * A ``Chain`` that never forks or definitely joins yields raw data chunks, instead of nesting each in a ``list``
+
+        * A ``Chain`` whose first element does a ``fork`` inherits this.
 
     **Fixes**
 
