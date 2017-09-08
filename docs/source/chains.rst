@@ -134,12 +134,12 @@ This holds true even if just one subchain returns anything.
 Compound Flow - Generic Chains
 ------------------------------
 
-Combinations of :term:`flat chains <flat chain>` and :term:`bundles <bundles>` automatically create a generic :term:`chain`.
+Combinations of :term:`flat chains <flat chain>` and :term:`bundles <bundle>` automatically create a generic :term:`chain`.
 This :term:`compound link` is aware of :term:`joining` and :term:`forking` of the data flow for processing.
-:term:`Flat chains <flat chain>` and :term:`bundles <bundles>` implement a specific combination of these feature;
+:term:`Flat chains <flat chain>` and :term:`bundles <bundle>` implement a specific combination of these feature;
 custom elements can freely provide other combinations.
 
-Both :term:`flat chains <flat chain>` and :term:`bundles <bundles>` do not :term:`join`
+Both :term:`flat chains <flat chain>` and :term:`bundles <bundle>` do not :term:`join`
 - they process each :term:`data chunk` individually.
 A :term:`flat chain` always produces one output :term:`chunk` for every input :term:`chunk`.
 In contrast, a :term:`bundle` produces multiple output :term:`chunks <chunk>` for each input :term:`chunk`.

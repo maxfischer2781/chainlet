@@ -3,7 +3,7 @@ Traversal Synchronicity
 
 By default, :py:mod:`chainlet` operates in synchronous mode:
 there is a fixed ordering by which elements are traversed.
-Both :term:`chain <chains>` and :term:`bundles <bundle>` are traversed one element at a time.
+Both :term:`chains <chain>` and :term:`bundles <bundle>` are traversed one element at a time.
 
 However, :py:mod:`chainlet` also allows for asynchronous mode:
 any elements which do not explicitly depend on each other can be traversed in parallel.
