@@ -253,10 +253,34 @@ class CompoundLink(ChainLink):
 
     These compound elements expose the regular interface of chainlets.
     They can again be chained or stacked to form more complex chainlets.
+
+    Any :py:class:`CompoundLink` based on :term:`sequential <sequence>` or :term:`mapped <mapping>`
+    elements allows for subscription:
+
+    .. describe:: len(link)
+
+       Return the number of elements in the link.
+
+    .. describe:: link[i]
+
+       Return the ``i``'th :term:`chainlink` of the link.
+
+    .. describe:: link[i:j:k]
+
+       Return a *new* link consisting of the elements defined by the :term:`slice` ``[i:j:k]``.
+       This follows the same semantics as subscription of regular :term:`sequences <sequence>`.
     """
     def __init__(self, elements):
         self.elements = elements
         super(CompoundLink, self).__init__()
+
+    def __len__(self):
+        return len(self.elements)
+
+    def __getitem__(self, item):
+        if item.__class__ == slice:
+            return self.__class__(self.elements[item])
+        return self.elements[item]
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
