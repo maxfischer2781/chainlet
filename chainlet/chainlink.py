@@ -143,7 +143,7 @@ class ChainLink(object):
         :param children: child or children to bind
         :type children: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: LinearChain, ParallelChain or MetaChain
+        :rtype: FlatChain, Bundle or Chain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(self, children)
@@ -159,7 +159,7 @@ class ChainLink(object):
         :param parents: parent or parents to bind
         :type parents: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: LinearChain, ParallelChain or MetaChain
+        :rtype: FlatChain, Bundle or Chain
         """
         linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
         return linker(parents, self)
@@ -169,6 +169,11 @@ class ChainLink(object):
         return self >> children
 
     def __iter__(self):
+        if self.chain_fork:
+            return self._iter_fork()
+        return self._iter_flat()
+
+    def _iter_flat(self):
         while True:
             try:
                 yield self.chainlet_send(None)
@@ -176,6 +181,15 @@ class ChainLink(object):
                 if err.return_value is not END_OF_CHAIN:
                     yield err.return_value
             except StopIteration:
+                break
+
+    def _iter_fork(self):
+        while True:
+            try:
+                result = list(self.chainlet_send(None))
+                if result:
+                    yield result
+            except (StopIteration, _ElementExhausted):
                 break
 
     def __next__(self):
@@ -187,6 +201,11 @@ class ChainLink(object):
 
     def send(self, value=None):
         """Send a value to this element for processing"""
+        if self.chain_fork:
+            return self._send_fork(value)
+        return self._send_flat(value)
+
+    def _send_flat(self, value=None):
         # we do one explicit loop to keep overhead low...
         try:
             return self.chainlet_send(value)
@@ -200,6 +219,17 @@ class ChainLink(object):
                 except StopTraversal as err:
                     if err.return_value is not END_OF_CHAIN:
                         return err.return_value
+
+    def _send_fork(self, value=None):
+        # we do one explicit loop to keep overhead low...
+        result = list(self.chainlet_send(value))
+        if result:
+            return result
+        # ...then do the correct loop if needed
+        while True:
+            result = list(self.chainlet_send(value))
+            if result:
+                return result
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
@@ -223,10 +253,34 @@ class CompoundLink(ChainLink):
 
     These compound elements expose the regular interface of chainlets.
     They can again be chained or stacked to form more complex chainlets.
+
+    Any :py:class:`CompoundLink` based on :term:`sequential <sequence>` or :term:`mapped <mapping>`
+    elements allows for subscription:
+
+    .. describe:: len(link)
+
+       Return the number of elements in the link.
+
+    .. describe:: link[i]
+
+       Return the ``i``'th :term:`chainlink` of the link.
+
+    .. describe:: link[i:j:k]
+
+       Return a *new* link consisting of the elements defined by the :term:`slice` ``[i:j:k]``.
+       This follows the same semantics as subscription of regular :term:`sequences <sequence>`.
     """
     def __init__(self, elements):
         self.elements = elements
         super(CompoundLink, self).__init__()
+
+    def __len__(self):
+        return len(self.elements)
+
+    def __getitem__(self, item):
+        if item.__class__ == slice:
+            return self.__class__(self.elements[item])
+        return self.elements[item]
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -240,60 +294,9 @@ class CompoundLink(ChainLink):
         raise NotImplementedError
 
 
-class LinearChain(CompoundLink):
+class Bundle(CompoundLink):
     """
-    A linear sequence of chainlets, with each element preceding the next
-    """
-    chain_join = False
-    chain_fork = False
-
-    def chainlet_send(self, value=None):
-        for element in self.elements:
-            # a StopTraversal may be raised here
-            # we do NOT catch it, but let it bubble up instead
-            # whoever catches it can extract a potential early return value
-            value = element.chainlet_send(value)
-        return value
-
-    def __repr__(self):
-        return ' >> '.join(repr(elem) for elem in self.elements)
-
-
-class ConcurrentChain(CompoundLink):  # pylint: disable=abstract-method
-    """
-    A collection of concurrent chainlets, with multiple elements running at the same time
-    """
-    chain_join = False
-    chain_fork = True
-
-    def __iter__(self):
-        while True:
-            try:
-                result = list(self.chainlet_send(None))
-                if result:
-                    yield result
-            except (StopIteration, _ElementExhausted):
-                break
-
-    def send(self, value=None):
-        """Send a value to this element for processing"""
-        # we do one explicit loop to keep overhead low...
-        result = list(self.chainlet_send(value))
-        if result:
-            return result
-        # ...then do the correct loop if needed
-        while True:
-            result = list(self.chainlet_send(value))
-            if result:
-                return result
-
-    def __repr__(self):
-        return repr(self.elements)
-
-
-class ParallelChain(ConcurrentChain):
-    """
-    A parallel sequence of chainlets, with each element ranked the same
+    A group of chainlets that concurrently process each :term:`data chunk`
     """
     chain_join = False
     chain_fork = True
@@ -333,27 +336,71 @@ class ParallelChain(ConcurrentChain):
         if exhausted_elements and exhausted_elements == len(self.elements):
             raise _ElementExhausted
 
+    def __repr__(self):
+        return repr(self.elements)
 
-class MetaChain(ConcurrentChain):
+
+class Chain(CompoundLink):
     """
-    A mixed sequence of linear and parallel chainlets
+    A group of chainlets that sequentially process each :term:`data chunk`
+
+    Slicing a chain guarantees consistency of the sum of parts and the chain.
+    Linking an ordered, complete sequence of subslices recreates an equivalent chain.
+
+    .. code:: python
+
+        chain == chain[:i] >> chain[i:]
+
+    Also, splitting a chain allows to pass values along the parts for equal results.
+    This is useful if you want to inspect a chain at a specific position.
+
+    .. code:: python
+
+        chain_result = chain.send(value)
+        temp_value = chain[:i].send(value)
+        split_result = chain[i:].send(temp_value)
+        chain_result == temp_value
     """
+    chain_join = False
+    chain_fork = False
+
     def __init__(self, elements):
-        _elements = []
-        _elements_buffer = []
-        for element in elements:
-            if isinstance(element, ParallelChain):
-                if _elements_buffer:
-                    _elements.append(LinearChain(tuple(_elements_buffer)))
-                    _elements_buffer = []
-                _elements.append(element)
-            else:
-                _elements_buffer.append(element)
-        super(MetaChain, self).__init__(tuple(elements))
+        super(Chain, self).__init__(elements)
+        if elements:
+            self.chain_fork = self._chain_forks(elements)
+            self.chain_join = elements[0].chain_join
+
+    @staticmethod
+    def _chain_forks(elements):
+        """Detect whether a sequence of elements leads to a fork of streams"""
+        # we are only interested in the result, so unwind from the end
+        for element in reversed(elements):
+            if element.chain_fork:
+                return True
+            elif element.chain_join:
+                return False
+        return False
+
+    def _iter_flat(self):
+        for item in self._iter_fork():
+            yield item[0]
+
+    def send(self, value=None):
+        """Send a value to this element for processing"""
+        try:
+            result = super(Chain, self).send(value)
+            if self.chain_fork:
+                return result
+            return next(iter(result))
+        except _ElementExhausted:
+            raise StopIteration
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
-        values = [value]
+        if self.chain_join:
+            values = value
+        else:
+            values = [value]
         try:
             for element in self.elements:
                 # aggregate input for joining paths, flatten output of parallel paths
@@ -425,9 +472,29 @@ class MetaChain(ConcurrentChain):
         return ' >> '.join(repr(elem) for elem in self.elements)
 
 
+class FlatChain(Chain):
+    """
+    A specialised :py:class:`Chain` which never forks or joins internally
+    """
+    chain_join = False
+    chain_fork = False
+
+    # short circuit to the flat iter/send, since this is all we ever need
+    __iter__ = ChainLink._iter_flat  # pylint:disable=protected-access
+    send = ChainLink._send_flat  # pylint:disable=protected-access
+
+    def chainlet_send(self, value=None):
+        for element in self.elements:
+            # a StopTraversal may be raised here
+            # we do NOT catch it, but let it bubble up instead
+            # whoever catches it can extract a potential early return value
+            value = element.chainlet_send(value)
+        return value
+
+
 def parallel_chain_converter(element):
     if isinstance(element, (tuple, list, set)):
-        return ParallelChain(element)
+        return Bundle(element)
     raise TypeError
 
 
@@ -442,7 +509,7 @@ class ChainLinker(object):
         _elements = []
         for element in elements:
             element = self.convert(element)
-            if isinstance(element, (LinearChain, MetaChain)):
+            if isinstance(element, (FlatChain, Chain)):
                 _elements.extend(element.elements)
             elif hasattr(element, 'elements') and not element.elements:
                 pass
@@ -450,9 +517,9 @@ class ChainLinker(object):
                 _elements.append(element)
         if len(_elements) == 1:
             return _elements[0]
-        if any(isinstance(element, ParallelChain) for element in _elements):
-            return MetaChain(_elements)
-        return LinearChain(_elements)
+        if any(element.chain_fork for element in _elements):
+            return Chain(_elements)
+        return FlatChain(_elements)
 
     def convert(self, element):
         for converter in self.converters:

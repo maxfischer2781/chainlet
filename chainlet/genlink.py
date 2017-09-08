@@ -127,7 +127,7 @@ class StashedGenerator(object):  # pylint:disable=too-many-instance-attributes
             """Implement next(self)"""
             return self.send(None)
 
-    def throw(self, typ, val=None, tb=None):  # pylint:disable=method-hidden
+    def throw(self, typ, val=None, tb=None):  # pylint:disable=method-hidden,invalid-name
         """
         throw(typ[,val[,tb]]) -> raise exception in generator,
         return next yielded value or raise StopIteration.

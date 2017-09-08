@@ -25,6 +25,8 @@ chainlet - blocks for processing chains
 
     source/grammar
     source/chains
+    source/async
+    source/glossary
     Basic Building Blocks <source/api/chainlet>
     Builtin and Protocol Wrappers <source/api/chainlet.protolink>
     Changelog <source/changelog>

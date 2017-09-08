@@ -8,58 +8,59 @@ As both modes return the result, the only difference is whether the chain is giv
 .. code:: python
 
     chain = chainlet1 >> chainlet2 >> chainlet3
-    print(next(chain))  # pull from chain
-    chain.send('input')  # push to chain
+    print('pull', next(chain))
+    print('push', chain.send('input'))
 
 Data cascades through chains:
 output of each parent is passed to its children, which again provide output for their children.
 At each step, an element may inspect, transform or replace the data it receives.
 
-The data flow is thus dicated by several primitive steps:
-Individual elements process data.
-Linear chains pass data from element to element.
-Forks and joins split or merge data to chains.
+The data flow is thus dictated by several primitive steps:
+Each individual :term:`chainlink` processes data.
+Compound :term:`chains <chain>` pass data from element to element.
+At :term:`forks <fork>` and :term:`joins <join>`, data is split or merged to further elements.
 
 Single Element Processing
 -------------------------
 
-Each element, be it a single chainlet or chain of chainlets, implements the generator protocol [#genprot]_.
+Each element, be it a primitive :term:`chainlet` or :term:`compound link`, implements the generator protocol [#genprot]_.
 Most importantly, it allows to pull and push data from and to it:
 
 * New data is *pulled from* an element using ``next(element)``.
   The element may produce a new data chunk and return it.
 
 * Existing data is *pushed to* the element using ``element.send(data)``.
-  The element may transform the data and return a result.
+  The element may transform the data and return the result.
 
 In accordance with the generator protocol, ``next(element)`` is equivalent to ``element.send(None)``.
-Consequently, both operations are handled completely equivalently by *any* chainlet, even complex ones.
-Whether pulling, pushing or both is *sensible* depends on the element - it cannot be inferred from the interface.
+Consequently, both operations are handled completely equivalently by *any* :term:`chainlink`, even complex ones.
+Whether pulling, pushing or both is *sensible* depends on the use case -
+for example, it cannot be inferred from the interface whether a :term:`chainlink` can operate without input.
 
 Elements that work in pull mode can also be used in iteration.
-For every iteration step, ``next(element)`` is called to produce a value.
+For every iteration step, the equivalent of ``next(element)`` is called to produce a value.
 
 .. code:: python
 
-    for value in element:
+    for value in chain:
         print(value)
 
 Both ``next(element)`` and ``element.send(None)`` form the *public* interface of an element.
 They take care of unwinding chain complexities, such as multiple paths and skipping of values.
-Custom elements should implement :py:meth:`chainlet.ChainLink.chainlet_send` to change how data is processed.
+Custom :term:`chainlinks <chainlink>` should implement :py:meth:`~chainlet.ChainLink.chainlet_send` to change how data is processed.
 
-Linear Chains -- Processing Sequence
-------------------------------------
+Linear Flow -- Flat Chains
+--------------------------
 
-The simplest compound object is a *linear chain*, which is a flat sequence of elements.
-Data sent to the chain is transformed iteratively:
+The simplest compound object is a :term:`flat chain`, which is a sequence of :term:`chainlinks <chainlink>`.
+Data sent to the chain is transformed incrementally:
 Input is passed to the first element, and its result to the second, and so on.
 Once all elements have been traversed, the result is returned.
 
 .. graphviz::
 
     digraph g {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         compound=true;
         subgraph cluster_c {
             ranksep=0;
@@ -76,21 +77,21 @@ Once all elements have been traversed, the result is returned.
         c4 -> out [label=return, ltail=cluster_c]
     }
 
-Linear chains are special in that they always take a single input and return a single output.
-Even when joining linear chains, the result is always another linear chain with the same features.
+Linear chains are special in that they always take a single input :term:`chunk` and return a single output :term:`chunk`.
+Even when :term:`linking` flat chains, the result is flat linear chain with the same features.
 This makes them a suitable replacement for generators in any way.
 
-Parallel Chains -- Processing Splitting
----------------------------------------
+Concurrent Flow -- Chain Bundles
+--------------------------------
 
-Processing of data can be split to multiple sub-chains in a *parallel chain*, a concurrent sequence of chains.
-When a chain forks to multiple sub-chains, data is passed along each sub-chain separately.
-In specific, the return value of the element *before* the fork is passed to each sub-chain.
+Processing of data can be split to multiple sub-chains in a :term:`bundle`, a group of concurrent :term:`chainlinks <chainlink>`.
+When a chain :term:`branches <branch>` to multiple sub-chains, data flows along each sub-chain independently.
+In specific, the return value of the element *before* the :term:`branch` is passed to *each* sub-chain individually.
 
 .. graphviz::
 
     digraph g {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         compound=true;
         a1 [shape=box, style=rounded, label=""];
         a1 -> a1 [label=send];
@@ -120,8 +121,8 @@ In specific, the return value of the element *before* the fork is passed to each
         c3 -> out [label=return, ltail=cluster_c]
     }
 
-In contrast to linear chains, parallel chains always return multiple values at once:
-their return value is an iterable over *all* values returned by subchains.
+In contrast to a :term:`flat chain`, a :term:`bundle` always returns multiple :term:`chunks <chunk>` at once:
+its return value is an iterable over *all* :term:`chunks <chunk>` returned by sub-chains.
 This holds true even if just one subchain returns anything.
 
 .. note::
@@ -130,34 +131,32 @@ This holds true even if just one subchain returns anything.
     If an element changes a mutable data structure, it should explicitly create a copy.
     Otherwise, peers may see the changes as well.
 
-Meta Chains -- Sequences and Forking
-------------------------------------
+Compound Flow - Generic Chains
+------------------------------
 
-Combinations of linear and parallel chains automatically create a meta chain.
-This compound element is aware of :py:mod:`chainlet`\ 's capability to conditionally join and fork data for processing.
-Linear and parallel chains implement a specific combination of these feature;
+Combinations of :term:`flat chains <flat chain>` and :term:`bundles <bundle>` automatically create a generic :term:`chain`.
+This :term:`compound link` is aware of :term:`joining` and :term:`forking` of the data flow for processing.
+:term:`Flat chains <flat chain>` and :term:`bundles <bundle>` implement a specific combination of these feature;
 custom elements can freely provide other combinations.
 
-Both linear and parallel chains do not *join* - they take on every data chunk individually.
-A linear chain always produces one output data chunk for every input data chunk.
-Instead, a parallel chain produces multiple output chunks for each input chunk.
+Both :term:`flat chains <flat chain>` and :term:`bundles <bundle>` do not :term:`join`
+- they process each :term:`data chunk` individually.
+A :term:`flat chain` always produces one output :term:`chunk` for every input :term:`chunk`.
+In contrast, a :term:`bundle` produces multiple output :term:`chunks <chunk>` for each input :term:`chunk`.
 
-Each output chunk is passed individually to linear and parallel chains.
-This means that parallel chains fork the data flow.
-
-A chain such as the following:
+A statement such as the following:
 
 .. code:: python
 
     name('a') >> name('b') >> (name('c'), name('d') >> name('e')) >> name('f')
 
-Creates a meta chain that connects ``f`` to *both* ``c`` and ``e``.
+Creates a :term:`chain` that :term:`branches <branch>` from ``f`` to both ``c`` and ``d >> e``.
 For the data flow, ``f`` is visited *separately* for the results from ``c`` and ``e``.
 
 .. graphviz::
 
     digraph graphname {
-        graph [rankdir=LR]
+        graph [rankdir=LR, bgcolor="transparent"]
         a -> b
         b -> c -> f1
         b -> d -> e -> f2
@@ -173,13 +172,14 @@ For the data flow, ``f`` is visited *separately* for the results from ``c`` and 
 Generic Join and Fork
 ^^^^^^^^^^^^^^^^^^^^^
 
-The iteration through meta-chains is agnostic towards the type of elements:
+The traversal through a :term:`chain` is agnostic towards the type of elements:
 Each element explicitly specifies whether it joins the data flow or forks it.
-This is signaled via the attributes ``element.chain_join == True`` and ``element.chain_fork == True``, respectively.
+This is signaled via the attributes ``element.chain_join`` and ``element.chain_fork``, respectively.
 
-A *joining* element receives an iterable providing all data chunks produced by its preceding element.
-A *forking* element produces an iterable providing all applicable data chunks.
-These features can be combined to have an element joining incoming chunks but forking to multiple outgoing chunks.
+A :term:`joining` element *receives* an iterable providing all data chunks produced by its preceding element.
+A :term:`forking` element *produces* an iterable providing all valid data chunks.
+These features can be combined to have an element :term:`join` the incoming data flow and
+:term:`fork` it to another number of outgoing :term:`chunks <chunk>`.
 
 ============ =========== ==========
  Fork/\Join     False       True
@@ -188,6 +188,7 @@ These features can be combined to have an element joining incoming chunks but fo
  **True**       1->m        n->m
 ============ =========== ==========
 
-Linear chains are examples for a 1 -> 1 data flow, while parallel chains implement a 1 -> m data flow.
+A :term:`flat chain` is an example for a 1 -> 1 data flow, while a :term:`bundle` implements a 1 -> m data flow.
+A generic :term:`chain` is adjusted depending on its elements.
 
 .. [#genprot] See the `Generator-Iterator Methods <https://docs.python.org/3/reference/expressions.html#generator-iterator-methods>`_.
