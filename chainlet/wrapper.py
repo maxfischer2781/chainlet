@@ -81,8 +81,8 @@ class WrapperMixin(object):
                 # empty dict.
                 __annotations__ = getattr(raw_slave, '__annotations__', {})
 
-                def __init__(self, *slave_args, **slave__kwargs):
-                    slave = self.__init_slave__(self._raw_slave, *slave_args, **slave__kwargs)
+                def __init__(self, *slave_args, **slave_kwargs):
+                    slave = self.__init_slave__(self._raw_slave, *slave_args, **slave_kwargs)
                     super(Wraplet, self).__init__(slave, *cls_args, **cls_kwargs)
 
                 def __repr__(self):
