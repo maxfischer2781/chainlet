@@ -343,13 +343,32 @@ class Bundle(CompoundLink):
 class Chain(CompoundLink):
     """
     A group of chainlets that sequentially process each :term:`data chunk`
+
+    Slicing a chain guarantees consistency of the sum of parts and the chain.
+    Linking an ordered, complete sequence of subslices recreates an equivalent chain.
+
+    .. code:: python
+
+        chain == chain[:i] >> chain[i:]
+
+    Also, splitting a chain allows to pass values along the parts for equal results.
+    This is useful if you want to inspect a chain at a specific position.
+
+    .. code:: python
+
+        chain_result = chain.send(value)
+        temp_value = chain[:i].send(value)
+        split_result = chain[i:].send(temp_value)
+        chain_result == temp_value
     """
     chain_join = False
-    chain_fork = True
+    chain_fork = False
 
     def __init__(self, elements):
         super(Chain, self).__init__(elements)
-        self.chain_fork = self._chain_forks(elements)
+        if elements:
+            self.chain_fork = self._chain_forks(elements)
+            self.chain_join = elements[0].chain_join
 
     @staticmethod
     def _chain_forks(elements):
@@ -378,7 +397,10 @@ class Chain(CompoundLink):
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
-        values = [value]
+        if self.chain_join:
+            values = value
+        else:
+            values = [value]
         try:
             for element in self.elements:
                 # aggregate input for joining paths, flatten output of parallel paths
