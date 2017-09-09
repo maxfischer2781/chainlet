@@ -167,14 +167,15 @@ texinfo_documents = [
 intersphinx_mapping = {'https://docs.python.org/3/': None}
 
 
-# skip global wrapper._raw_slave names for pickle support
 def skip_pickle_inject(app, what, name, obj, skip, options):
+    """skip global wrapper._raw_slave names used only for pickle support"""
     if name.endswith('._raw_slave'):
         return True
     return None
 
 
 def wraplet_signature(app, what, name, obj, options, signature, return_annotation):
+    """have wrapplets use the signature of the slave"""
     try:
         wrapped = obj._raw_slave
     except AttributeError:
