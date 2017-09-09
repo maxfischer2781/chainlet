@@ -19,6 +19,7 @@
 #
 import os
 import sys
+import sphinx.ext.autodoc as autodoc
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from chainlet import __about__
@@ -162,8 +163,28 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-
-
-# Example configuration for intersphinx: refer to the Python standard library.
+# plugin and extensions
 intersphinx_mapping = {'https://docs.python.org/3/': None}
+
+
+# skip global wrapper._raw_slave names for pickle support
+def skip_pickle_inject(app, what, name, obj, skip, options):
+    if name.endswith('._raw_slave'):
+        return True
+    return None
+
+
+def wraplet_signature(app, what, name, obj, options, signature, return_annotation):
+    try:
+        wrapped = obj._raw_slave
+    except AttributeError:
+        return None
+    else:
+        slave_argspec = autodoc.getargspec(wrapped)
+        slave_signature = autodoc.formatargspec(obj, *slave_argspec)
+        return (slave_signature, return_annotation)
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', skip_pickle_inject)
+    app.connect('autodoc-process-signature', wraplet_signature)
