@@ -34,8 +34,7 @@ Glossary
         Primitive and compound elements from which chains can be formed.
 
     compound link
-        A compound :term:`chainlink`.
-        A group of other :term:`chainlink <chainlinks>`, which can be used as a whole to form chains and bundles.
+        A group of :term:`chainlinks <chainlink>`, which can be used as a whole as elements in chains and bundles.
 
         The :term:`chain` and :term:`bundle` are the most obvious forms, created implicitly by the ``>>`` operator.
 
