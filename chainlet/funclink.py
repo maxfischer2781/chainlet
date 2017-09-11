@@ -77,5 +77,12 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
 def funclet(function):
     """
     Convert a function to a :py:class:`~chainlink.ChainLink`
+
+    .. code:: python
+
+        @funclet
+        def square(value):
+            "Convert every data chunk to its numerical square"
+            return value ** 2
     """
     return FunctionLink.wraplet()(function)
