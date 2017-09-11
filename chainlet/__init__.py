@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 from .chainlink import ChainLink, StopTraversal
-from .funclink import FunctionLink, funclet
-from .genlink import GeneratorLink, genlet
-from .dataflow import NoOp, joinlet, forklet, MergeLink
+from .funclink import funclet
+from .genlink import genlet
+from .dataflow import joinlet, forklet
 
 __all__ = [
     'ChainLink', 'StopTraversal',
-    'FunctionLink', 'funclet',
-    'GeneratorLink', 'genlet',
-    'NoOp', 'joinlet', 'forklet', 'MergeLink'
+    'funclet',
+    'genlet',
+    'joinlet', 'forklet',
 ]
