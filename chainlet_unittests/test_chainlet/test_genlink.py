@@ -82,9 +82,9 @@ class TestGeneratorLink(unittest.TestCase):
             primer = yield
             yield primer
         # prime for use
-        prime_true = chainlet.GeneratorLink(generator(), prime=True)
+        prime_true = chainlet.genlink.GeneratorLink(generator(), prime=True)
         self.assertEqual(prime_true.send('pingpong'), 'pingpong')
-        prime_false = chainlet.GeneratorLink(generator(), prime=False)
+        prime_false = chainlet.genlink.GeneratorLink(generator(), prime=False)
         self.assertIsNone(next(prime_false))
         self.assertEqual(prime_false.send('pingpong'), 'pingpong')
         # make sure generator has ended

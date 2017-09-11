@@ -29,22 +29,22 @@ class ChainMerging(unittest.TestCase):
                 return '%s(%s)' % (self.__class__.__name__, self.value)
         inputs = [[1, 2, 3], [4, 5, 6], [7.5, 8.5, 9.5]]
         inputs = [[Numerical(val) for val in chunk] for chunk in inputs]
-        chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
+        chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink()
         with self.assertRaises(ValueError):
             list(chain)
-        chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink((Numerical, chainlet.dataflow.merge_numerical))
+        chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink((Numerical, chainlet.dataflow.merge_numerical))
         self.assertEqual(list(chain), [sum(row) for row in zip(*inputs)])
 
     def test_merge_numerical(self):
         """Merge numbers from multiple elements"""
         inputs = [[1, 2, 3], [4, 5, 6], [7.5, 8.5, 9.5]]
-        chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
+        chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink()
         self.assertEqual(list(chain), [sum(row) for row in zip(*inputs)])
 
     def test_merge_list(self):
         """Merge lists from multiple elements"""
         inputs = [[[1], [2], [3]], [[4], [5], [6]], [[7.5], [8.5], [9.5]]]
-        chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
+        chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink()
         self.assertEqual(list(chain), [sum(row, []) for row in zip(*inputs)])
 
     def test_merge_dict(self):
@@ -54,14 +54,14 @@ class ChainMerging(unittest.TestCase):
             [{idx: str(idx)} for idx in range(3, 6)],
             [{idx: str(idx)} for idx in range(3)]
         ]
-        chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
+        chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink()
         self.assertEqual(list(chain), [{idx: str(idx), idx+3: str(idx+3)} for idx in range(3)])
 
     def test_merge_unbalanced(self):
         """Merge from multiple elements with empty ones"""
         for inputs in ([[1, 2, 3], [4, 5, 6], [7.5, 8.5, 9.5], []], [[1, 2, 3], [], []], [[], [], []]):
             with self.subTest(inputs=inputs):
-                chain = [produce(chunk) for chunk in inputs] >> chainlet.MergeLink()
+                chain = [produce(chunk) for chunk in inputs] >> chainlet.dataflow.MergeLink()
                 self.assertEqual(
                     list(chain),
                     [sum(elem for elem in row if elem is not None) for row in zip_longest(*inputs)]
