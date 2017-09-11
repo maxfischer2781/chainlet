@@ -47,7 +47,7 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     :param args: positional arguments for the slave
     :param kwargs: keyword arguments for the slave
 
-    :note: Use the :py:func:`funclet` function if you wish to decorate a
+    :note: Use the :py:func:`~.funclet` function if you wish to decorate a
            function to produce FunctionLinks.
 
     This class wraps a function (or other callable), calling it to perform

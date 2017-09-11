@@ -168,13 +168,13 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
     :param prime: advance the generator to the next/first yield
     :type prime: bool
 
-    :note: Use the :py:func:`linklet` function if you wish to decorate a
+    :note: Use the :py:func:`~.genlet` function if you wish to decorate a
            generator *function* to produce GeneratorLinks.
 
     This class wraps a generator, using it to perform work when receiving
-    a value and passing on the result. The `slave` can be any object that
-    implements the generator protocol - the methods `send`, `throw` and `close`
-    are directly called on the `slave`.
+    a value and passing on the result. The ``slave`` can be any object that
+    implements the generator protocol - the methods ``send``, ``throw`` and ``close``
+    are directly called on the ``slave``.
     """
     def __init__(self, slave, prime=True):
         super(GeneratorLink, self).__init__(slave=slave)
