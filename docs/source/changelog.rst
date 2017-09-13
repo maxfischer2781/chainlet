@@ -35,6 +35,10 @@ v1.2.0a
 
         * A ``Chain`` whose first element does a ``fork`` inherits this.
 
+    **Minor Changes**
+
+        * The top-level namespace ``chainlet`` has been cleared from some specialised aliases.
+
     **Fixes**
 
         * Chains containing any ``chainlet_fork`` elements but no ``Bundle`` are properly built
