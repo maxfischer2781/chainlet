@@ -1,12 +1,9 @@
-import itertools
 import unittest
 
 from chainlet import ChainLink, genlet, funclet
-from chainlet.dataflow import joinlet, forklet, NoOp
-from chainlet.protolink import printlet
-import chainlet._debug
+from chainlet.dataflow import joinlet, forklet
 
-from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery, ReturnEvery
+from chainlet_unittests.utility import produce
 
 
 class Decorators(unittest.TestCase):
