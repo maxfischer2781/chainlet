@@ -62,6 +62,12 @@ Glossary
         to it at once.
 
     branch
+        A processing sequence that is traversed concurrently with others.
+
     branching
-        Splitting of the processing sequence into multiple subsequences.
+        Splitting of the processing sequence into multiple :term:`branches <branch>`.
         Usually implies a :term:`fork`.
+
+    merging
+        Combining of multiple :term:`branches <branch>` into one.
+        Usually implies a :term:`join`.
