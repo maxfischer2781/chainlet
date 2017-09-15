@@ -25,6 +25,10 @@ Instead of requiring you to nest code or insert hooks, ``chainlet`` offers a con
     # chainlet pipeline
     xml_reader(path='data.xml') >> flatten(join='.'.join) >> csv_writer(path='data.csv')
 
+Processing pipelines created with ``chainlet`` are an extension of generators and functions:
+they can be iterated to pull results, called to push input or even used to get/fetch a stream of data.
+The bindings of ``chainlet`` allow to compose complex processing chains from simple building blocks.
+
 Creating new chainlets is simple, requiring you only to define the processing of data.
 It is usually sufficient to use regular functions, generators or coroutines, and let ``chainlet`` handle the rest:
 
@@ -43,9 +47,9 @@ Features
 We have designed ``chainlet`` to be a simple, intuitive library:
 
 * Modularize your code with small, independent processing blocks.
-* Intuitively compose processing pipelines from individual elements.
-* Automatically integrate functions, generators and coroutines in your pipelines.
-* Extend your processing with complex pipelines that fork and join as needed.
+* Intuitively compose processing chains from individual elements.
+* Automatically integrate functions, generators and coroutines in your chains.
+* Extend your processing capabilities with complex chains that fork and join as needed.
 
 Under the hood, ``chainlet`` merges iterator and functional paradigms in a minimal fashion to stay lightweight.
 
@@ -79,6 +83,10 @@ Our target is an opt-in approach to features from functional programming and sta
 
 Recent Changes
 --------------
+
+v1.2.0
+
+    Synchronous concurrent traversal, chain slicing and merging, fully featured function and generator wrappers
 
 v1.1.0
 

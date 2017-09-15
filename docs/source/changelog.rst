@@ -2,8 +2,8 @@
 chainlet Changelog
 ++++++++++++++++++
 
-v1.2.0a
--------
+v1.2.0
+------
 
     **New Features**
 
