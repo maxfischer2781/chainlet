@@ -2,30 +2,71 @@
 chainlet Changelog
 ++++++++++++++++++
 
+v1.2.0a
+-------
+
+    **New Features**
+
+        * Decorator/Wrapper versions of ``FunctionLink`` and ``GeneratorLink`` are proper subclasses of their class.
+          This allows setting attributes and inspection.
+          Previously, they were factory functions.
+
+        * Instances of ``FunctionLink`` can be copied and pickled.
+
+        * Instances of ``GeneratorLink`` can be copied and pickled.
+
+        * Subchains can be extracted from a ``Chain`` via slicing.
+
+    **Major Changes**
+
+        * Renamed compound chains and simplified inheritance to better reflect their structure:
+
+            * ``Chain`` has been renamed to ``CompoundLink``
+
+            * ``ConcurrentChain`` has been removed
+
+            * ``MetaChain`` has been renamed to ``Chain``
+
+            * ``LinearChain`` has been renamed to ``FlatChain``
+
+            * ``ParallelChain`` has been renamed to ``Bundle``
+
+        * A ``Chain`` that never forks or definitely joins yields raw data chunks, instead of nesting each in a ``list``
+
+        * A ``Chain`` whose first element does a ``fork`` inherits this.
+
+    **Minor Changes**
+
+        * The top-level namespace ``chainlet`` has been cleared from some specialised aliases.
+
+    **Fixes**
+
+        * Chains containing any ``chainlet_fork`` elements but no ``Bundle`` are properly built
+
 v1.1.0 2017-06-08
 -----------------
 
     **New Features**
 
-        Protolinks: chainlet versions of builtins and protocols
+        * Protolinks: chainlet versions of builtins and protocols
 
     **Minor Changes**
 
-        Removed outdated sections from documentation
+        * Removed outdated sections from documentation
 
 v1.0.0 2017-06-03
 -----------------
 
     **Notes**
 
-        Initial release
+        * Initial release
 
     **New Features**
 
-        Finalized definition of chainlet element interface on ``chainlet.ChainLink``
+        * Finalized definition of chainlet element interface on ``chainlet.ChainLink``
 
-        Wrappers for generators, coroutines and functions as ``chainlet.genlet`` and ``chainlet.funclet``
+        * Wrappers for generators, coroutines and functions as ``chainlet.genlet`` and ``chainlet.funclet``
 
-        Finalized dataflow definition for chains, fork and join
+        * Finalized dataflow definition for chains, fork and join
 
-        Drivers for sequential and threaded driving of chains
+        * Drivers for sequential and threaded driving of chains

@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from chainlet.chainlink import LinearChain, ParallelChain
+from chainlet.chainlink import FlatChain, Bundle
 
 from chainlet_unittests.utility import NamedChainlet
 
@@ -40,10 +40,10 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertNotEqual(chain_a_parent_sub, chain_a_parent_full)
 
     def test_single(self):
-        """Empty link as () >> child_a"""
+        """Empty link as `() >> child_a`"""
         chainlets = [NamedChainlet(idx) for idx in range(3)]
         for singlet in chainlets:
-            for empty in (LinearChain(()), ParallelChain(()), (), set(), [], set()):
+            for empty in (FlatChain(()), Bundle(()), (), set(), [], set()):
                 with self.subTest(singlet=singlet, empty=empty):
                     single_out = singlet >> empty
                     self.assertIs(single_out, singlet)

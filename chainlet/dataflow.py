@@ -1,3 +1,6 @@
+"""
+Helpers to modify the flow of data through a :term:`chain`
+"""
 from __future__ import absolute_import, division
 import itertools
 import collections
@@ -16,7 +19,7 @@ class NoOp(chainlink.ChainLink):
 
     .. code:: python
 
-        translator = find_language >> (NoOp(), to_french, to_german) >>
+        translate = parse_english >> (NoOp(), to_french, to_german)
     """
     def chainlet_send(self, value=None):
         return value
@@ -30,6 +33,23 @@ def joinlet(chainlet):
     :type chainlet: chainlink.ChainLink
     :return: the chainlet modified inplace
     :rtype: chainlink.ChainLink
+
+    Applying this decorator is equivalent to setting :py:attr:`~chainlet.chainlink.ChainLink.chain_join`
+    on ``chainlet``:
+    every :term:`data chunk` is an :term:`iterable` containing all data returned by the parents.
+    It is primarily intended for use with decorators that implicitly create a new
+    :py:class:`~chainlet.chainlink.ChainLink`.
+
+    .. code:: python
+
+        @joinlet
+        @funclet
+        def average(value: Iterable[Union[int, float]]):
+            "Reduce all data of the last step to its average"
+            values = list(value)  # value is an iterable of values due to joining
+            if not values:
+                return 0
+            return sum(values) / len(values)
     """
     chainlet.chain_join = True
     return chainlet
@@ -43,6 +63,18 @@ def forklet(chainlet):
     :type chainlet: chainlink.ChainLink
     :return: the chainlet modified inplace
     :rtype: chainlink.ChainLink
+
+    See the note on :py:func:`joinlet` for general features.
+    This decorator sets :py:attr:`~chainlet.chainlink.ChainLink.chain_fork`, and implementations *must* provide an
+    iterable.
+
+    .. code:: python
+
+        @forklet
+        @funclet
+        def friends(value):
+            "Split operations for every friend of a person"
+            return (person for person in persons if person.is_friend(value))
     """
     chainlet.chain_fork = True
     return chainlet
@@ -82,6 +114,29 @@ def merge_mappings(base_value, iter_values):
 class MergeLink(chainlink.ChainLink):
     """
     Element that joins the data flow by merging individual data chunks
+
+    :param mergers: pairs of ``type, merger`` to merge subclasses of ``type`` with ``merger``
+    :type mergers: tuple[type, callable]
+
+    Merging works on the assumption that all :term:`data chunks <data chunk>`
+    from the previous step are of the same type.
+    The type is deduced by peeking at the first :term:`chunk`,
+    based on which a ``merger`` is selected to perform the actual merging.
+    The choice of a ``merger`` is re-evaluated at every step;
+    a single :py:class:`MergeLink` can handle a different type
+    on each step.
+
+    Selection of a ``merger`` is based on testing ``issubclass(type(first), merger_type)``.
+    This check is evaluated in order, iterating through ``mergers``
+    before using :py:attr:`default_merger`.
+    For example, :py:class:`~collections.Counter` precedes :py:class:`dict` to use a
+    summation based merge strategy.
+
+    Each ``merger`` must implement the call signature
+
+    .. py:function:: merger(base_value: T, iter_values: Iterable[T]) -> T
+
+    where ``base_value`` is the value used for selecting the ``merger``.
     """
     chain_join = True
     chain_fork = False
@@ -100,7 +155,10 @@ class MergeLink(chainlink.ChainLink):
 
     def chainlet_send(self, value=None):
         iter_values = iter(value)
-        base_value = next(iter_values)
+        try:
+            base_value = next(iter_values)
+        except StopIteration:
+            raise chainlink.StopTraversal
         sample_type = type(base_value)
         try:
             merger = self._cache_mapping[sample_type]

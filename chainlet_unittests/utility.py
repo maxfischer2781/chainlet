@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
 import chainlet
+import chainlet.dataflow
 import chainlet.chainlink
 
 
-class NamedChainlet(chainlet.NoOp):
+class NamedChainlet(chainlet.dataflow.NoOp):
     """Chainlet with nice representation"""
     def __init__(self, name):
         self.name = name

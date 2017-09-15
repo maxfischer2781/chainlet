@@ -1,6 +1,8 @@
 import itertools
 import unittest
 
+from chainlet.dataflow import MergeLink
+
 from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery, ReturnEvery
 
 
@@ -96,3 +98,24 @@ class ChainIteration(unittest.TestCase):
         expect_next = iter(expected)
         for _ in range(len(expected)):
             self.assertEqual(next(chain_next), next(expect_next))
+        with self.assertRaises(StopIteration):
+            next(expect_next)
+        with self.assertRaises(StopIteration):
+            next(chain_next)
+        with self.assertRaises(StopIteration):
+            next(expect_iter)
+        with self.assertRaises(StopIteration):
+            next(chain_iter)
+
+    def test_fork_join(self):
+        """Fork and join as `source >> (child_a, child_b) >> join` => [1, 2, ...]"""
+        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        for elements in itertools.product(elements, repeat=2):
+            with self.subTest(elements=elements):
+                initials = (0, 15, -15, 200, -200, -1E6, +1E6)
+                expected = [2 * initial + sum(element.value for element in elements) for initial in initials]
+                a, b = elements
+
+                def factory():
+                    return produce(initials) >> (a, b) >> MergeLink()
+                self._test_iter(factory, expected, parallel=True)

@@ -115,11 +115,11 @@ def enumeratelet(iterable=None, start=0):
 
 @genlink.genlet
 def _enumeratelet(start=0):
-    n = operator.index(start)
+    index = operator.index(start)
     chunk = yield
     while True:
-        chunk = yield (n, chunk)
-        n += 1
+        chunk = yield (index, chunk)
+        index += 1
 
 
 def filterlet(function=bool, iterable=None):
@@ -155,6 +155,22 @@ def _filterlet(value=None, function=bool):
 
 @genlink.genlet
 def printlet(flatten=False, **kwargs):
+    """
+    Print chunks of data from a chain
+
+    :param flatten: whether to flatten data chunks
+    :param kwargs: keyword arguments as for :py:func:`print`
+
+    If ``flatten`` is :py:const:`True`, every chunk received is unpacked.
+    This is useful when passing around connected data, e.g. from :py:func:`~.enumeratelet`.
+
+    Keyword arguments via ``kwargs`` are equivalent to those of :py:func:`print`.
+    For example, passing ``file=sys.stderr`` is a simple way of creating a debugging element in a chain:
+
+    .. code::
+
+        debug_chain = chain[:i] >> printlet(file=sys.stderr) >> chain[i:]
+    """
     chunk = yield
     if flatten:
         while True:

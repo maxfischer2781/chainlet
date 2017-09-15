@@ -19,9 +19,10 @@
 #
 import os
 import sys
+import sphinx.ext.autodoc as autodoc
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import chainlet.__about__
+from chainlet import __about__
 
 
 # -- General configuration ------------------------------------------------
@@ -55,16 +56,16 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'chainlet'
-copyright = '2017, Max Fischer'
-author = 'Max Fischer'
+project = __about__.__title__
+copyright = __about__.__copyright__
+author = __about__.__author__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = chainlet.__about__.__version__
+version = __about__.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -162,8 +163,29 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+# plugin and extensions
+intersphinx_mapping = {'https://docs.python.org/3/': None}
 
 
+def skip_pickle_inject(app, what, name, obj, skip, options):
+    """skip global wrapper._raw_slave names used only for pickle support"""
+    if name.endswith('._raw_slave'):
+        return True
+    return None
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+
+def wraplet_signature(app, what, name, obj, options, signature, return_annotation):
+    """have wrapplets use the signature of the slave"""
+    try:
+        wrapped = obj._raw_slave
+    except AttributeError:
+        return None
+    else:
+        slave_argspec = autodoc.getargspec(wrapped)
+        slave_signature = autodoc.formatargspec(obj, *slave_argspec)
+        return (slave_signature, return_annotation)
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', skip_pickle_inject)
+    app.connect('autodoc-process-signature', wraplet_signature)
