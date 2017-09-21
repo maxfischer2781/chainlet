@@ -302,9 +302,6 @@ class Bundle(CompoundLink):
     chain_fork = True
 
     def chainlet_send(self, value=None):
-        return type(self.elements)(self._send_iter(value))
-
-    def _send_iter(self, value):
         results = []
         elements_exhausted = 0
         for element in self.elements:
