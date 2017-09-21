@@ -67,18 +67,3 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertSequenceEqual(chain_b.elements[0].elements, (a, b))
                 chain_b_inv = c << (a, b)
                 self.assertSequenceEqual(chain_b.elements, chain_b_inv.elements)
-
-    def test_parallel_type(self):
-        """Parallel links preserving sequence type"""
-        chainlet1 = NamedChainlet('1')
-        chainlet2 = NamedChainlet('2')
-        chainlet3 = NamedChainlet('3')
-        for a, b, c in itertools.product((chainlet1, chainlet2, chainlet3), repeat=3):
-            for pack_type in (list, tuple, set):
-                with self.subTest(a=a, b=b, c=c, pack_type=pack_type):
-                    chain_a = a >> pack_type((b, c))
-                    self.assertSequenceEqual(chain_a.elements[1].elements, pack_type((b, c)))
-                    self.assertIsInstance(chain_a.elements[1].elements, pack_type)
-                    chain_b = pack_type((a, b)) >> c
-                    self.assertSequenceEqual(chain_b.elements[0].elements, pack_type((a, b)))
-                    self.assertIsInstance(chain_b.elements[0].elements, pack_type)
