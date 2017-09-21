@@ -306,8 +306,6 @@ class Bundle(CompoundLink):
         elements_exhausted = 0
         for element in self.elements:
             if element.chain_fork:
-                # we explicitly fetch the first item to see if the iterable is empty
-                # without forcing the consumption of all items
                 try:
                     results.extend(element.chainlet_send(value))
                 except StopIteration:
