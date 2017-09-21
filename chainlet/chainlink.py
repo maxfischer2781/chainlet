@@ -302,18 +302,19 @@ class Bundle(CompoundLink):
     chain_fork = True
 
     def chainlet_send(self, value=None):
-        try:
-            return type(self.elements)(self._send_iter(value))
-        except _ElementExhausted:
-            raise StopIteration
+        return type(self.elements)(self._send_iter(value))
 
     def _send_iter(self, value):
         results = []
+        elements_exhausted = 0
         for element in self.elements:
             if element.chain_fork:
                 # we explicitly fetch the first item to see if the iterable is empty
                 # without forcing the consumption of all items
-                results.extend(element.chainlet_send(value))
+                try:
+                    results.extend(element.chainlet_send(value))
+                except StopIteration:
+                    elements_exhausted += 1
             else:
                 # this is a bit of a judgement call - MF@20170329
                 # either we
@@ -326,9 +327,9 @@ class Bundle(CompoundLink):
                     if err.return_value is not END_OF_CHAIN:
                         results.append(err.return_value)
                 except StopIteration:
-                    pass
-        if not results:
-            raise _ElementExhausted
+                    elements_exhausted += 1
+        if elements_exhausted == len(self.elements):
+            raise StopIteration
         return results
 
     def __repr__(self):
