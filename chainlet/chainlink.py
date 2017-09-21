@@ -308,18 +308,12 @@ class Bundle(CompoundLink):
             raise StopIteration
 
     def _send_iter(self, value):
-        exhausted_elements = 0
+        results = []
         for element in self.elements:
             if element.chain_fork:
                 # we explicitly fetch the first item to see if the iterable is empty
                 # without forcing the consumption of all items
-                element_iter = iter(element.chainlet_send(value))
-                try:
-                    yield next(element_iter)
-                except StopIteration:
-                    exhausted_elements += 1
-                for val in element_iter:
-                    yield val
+                results.extend(element.chainlet_send(value))
             else:
                 # this is a bit of a judgement call - MF@20170329
                 # either we
@@ -327,14 +321,15 @@ class Bundle(CompoundLink):
                 # - we suppress StopTraversal, denying any return_value
                 # - we return the Exception, which means later elements must check/filter it
                 try:
-                    yield element.chainlet_send(value)
+                    results.append(element.chainlet_send(value))
                 except StopTraversal as err:
                     if err.return_value is not END_OF_CHAIN:
-                        yield err.return_value
+                        results.append(err.return_value)
                 except StopIteration:
-                    exhausted_elements += 1
-        if exhausted_elements and exhausted_elements == len(self.elements):
+                    pass
+        if not results:
             raise _ElementExhausted
+        return results
 
     def __repr__(self):
         return repr(self.elements)
