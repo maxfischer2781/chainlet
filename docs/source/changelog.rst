@@ -2,6 +2,14 @@
 chainlet Changelog
 ++++++++++++++++++
 
+v1.3.0
+------
+
+    **New Features**
+
+        * The ``>>`` and ``<<`` operators use reflection precedence to if the left-hand-side element's Linker
+          is a subclass of the right-hand-side Linker.
+
 v1.2.0
 ------
 
