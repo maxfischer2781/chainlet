@@ -319,6 +319,10 @@ class CompoundLink(ChainLink):
 
        Return a *new* link consisting of the elements defined by the :term:`slice` ``[i:j:k]``.
        This follows the same semantics as subscription of regular :term:`sequences <sequence>`.
+
+    .. describe:: bool(link)
+
+        Whether the link contains any elements.
     """
     def __init__(self, elements):
         self.elements = elements
@@ -326,6 +330,9 @@ class CompoundLink(ChainLink):
 
     def __len__(self):
         return len(self.elements)
+
+    def __bool__(self):
+        return bool(self.elements)
 
     def __getitem__(self, item):
         if item.__class__ == slice:
