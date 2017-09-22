@@ -9,6 +9,11 @@ class NamedChainlet(chainlet.dataflow.NoOp):
     def __init__(self, name):
         self.name = name
 
+    def __bool__(self):
+        return True
+
+    __nonzero__ = __bool__
+
     def __repr__(self):
         return '%s' % self.name
 

@@ -24,6 +24,11 @@ class NoOp(chainlink.ChainLink):
     def chainlet_send(self, value=None):
         return value
 
+    def __bool__(self):
+        return False
+
+    __nonzero__ = __bool__
+
 
 def joinlet(chainlet):
     """
