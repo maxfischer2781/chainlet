@@ -72,9 +72,6 @@ class ChainLinker(object):
         return self.link(*elements)
 
 
-DEFAULT_LINKER = ChainLinker()
-
-
 class ChainLink(object):
     r"""
     BaseClass for elements in a chain
@@ -168,24 +165,28 @@ class ChainLink(object):
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
-    chain_linker = None
+    chain_linker = ChainLinker()
     #: whether this element processes several data chunks at once
     chain_join = False
     #: whether this element produces several data chunks at once
     chain_fork = False
 
     @staticmethod
-    def _get_linker(parent, child):
-        linkers = set(getattr(link, 'chain_linker', None) for link in (parent, child)) - set((None,))
-        if len(linkers) < 2:
-            try:
-                return linkers.pop()
-            except KeyError:
-                return DEFAULT_LINKER
+    def _get_linkers(parent, child):
+        linkers = [element.chain_linker for element in (parent, child) if hasattr(element, 'chain_linker')]
+        if linkers[0] == linkers[-1]:  # this catches duplicate and missing linkers
+            return linkers[:1]
         else:
-            if issubclass(type(child.chain_linker), type(parent.chain_linker)):
-                return child.chain_linker
-            return parent.chain_linker
+            if issubclass(type(linkers[-1]), type(linkers[0])):
+                return reversed(linkers)
+            return linkers
+
+    def _link(self, parent, child):
+        for linker in self._get_linkers(parent, child):
+            link = linker(parent, child)
+            if link is not NotImplemented:
+                return link
+        return NotImplemented
 
     def __rshift__(self, child):
         """
@@ -196,8 +197,7 @@ class ChainLink(object):
         :returns: link between self and child
         :rtype: FlatChain, Bundle or Chain
         """
-        linker = self._get_linker(self, child)
-        return linker(self, child)
+        return self._link(self, child)
 
     def __rrshift__(self, parent):
         # parent >> self
@@ -212,8 +212,7 @@ class ChainLink(object):
         :returns: link between self and children
         :rtype: FlatChain, Bundle or Chain
         """
-        linker = self._get_linker(parent, self)
-        return linker(parent, self)
+        return self._link(parent, self)
 
     def __rlshift__(self, child):
         # child << self
