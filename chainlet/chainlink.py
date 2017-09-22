@@ -138,9 +138,12 @@ class ChainLink(object):
 
     @staticmethod
     def _get_linker(parent, child):
-        linkers = set(getattr(link, 'chain_linker', None) for link in (parent, child))
-        if None in linkers:
-            return any(linkers) or DEFAULT_LINKER
+        linkers = set(getattr(link, 'chain_linker', None) for link in (parent, child)) - set((None,))
+        if len(linkers) < 2:
+            try:
+                return linkers.pop()
+            except KeyError:
+                return DEFAULT_LINKER
         else:
             if issubclass(type(child.chain_linker), type(parent.chain_linker)):
                 return child.chain_linker
