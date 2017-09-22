@@ -337,6 +337,8 @@ class CompoundLink(ChainLink):
     def __bool__(self):
         return bool(self.elements)
 
+    __nonzero__ = __bool__
+
     def __getitem__(self, item):
         if item.__class__ == slice:
             return self.__class__(self.elements[item])
