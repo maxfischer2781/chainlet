@@ -136,37 +136,47 @@ class ChainLink(object):
     #: whether this element produces several data chunks at once
     chain_fork = False
 
-    def __rshift__(self, children):
-        """
-        self >> children
+    @staticmethod
+    def _get_linker(parent, child):
+        linkers = set(getattr(link, 'chain_linker', None) for link in (parent, child))
+        if None in linkers:
+            return any(linkers) or DEFAULT_LINKER
+        else:
+            if issubclass(type(child.chain_linker), type(parent.chain_linker)):
+                return child.chain_linker
+            return parent.chain_linker
 
-        :param children: child or children to bind
-        :type children: ChainLink or iterable[ChainLink]
-        :returns: link between self and children
+    def __rshift__(self, child):
+        """
+        self >> child
+
+        :param child: following link to bind
+        :type child: ChainLink or iterable[ChainLink]
+        :returns: link between self and child
         :rtype: FlatChain, Bundle or Chain
         """
-        linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
-        return linker(self, children)
+        linker = self._get_linker(self, child)
+        return linker(self, child)
 
-    def __rrshift__(self, parents):
+    def __rrshift__(self, parent):
         # parent >> self
-        return self << parents
+        return self << parent
 
-    def __lshift__(self, parents):
+    def __lshift__(self, parent):
         """
         self << parents
 
-        :param parents: parent or parents to bind
-        :type parents: ChainLink or iterable[ChainLink]
+        :param parent: preceding link to bind
+        :type parent: ChainLink or iterable[ChainLink]
         :returns: link between self and children
         :rtype: FlatChain, Bundle or Chain
         """
-        linker = self.chain_linker if self.chain_linker is not None else DEFAULT_LINKER
-        return linker(parents, self)
+        linker = self._get_linker(parent, self)
+        return linker(parent, self)
 
-    def __rlshift__(self, children):
-        # children << self
-        return self >> children
+    def __rlshift__(self, child):
+        # child << self
+        return self >> child
 
     def __iter__(self):
         if self.chain_fork:
