@@ -37,6 +37,44 @@ class _ElementExhausted(Exception):
     """An element has no more values to produce"""
 
 
+class ChainLinker(object):
+    """
+    Helper for linking objects to chains
+    """
+    #: functions to convert elements; must return a ChainLink or raise TypeError
+    converters = []
+
+    def link(self, *elements):
+        _elements = []
+        for element in elements:
+            element = self.convert(element)
+            if isinstance(element, (FlatChain, Chain)):
+                _elements.extend(element.elements)
+            elif hasattr(element, 'elements') and not element.elements:
+                pass
+            else:
+                _elements.append(element)
+        if len(_elements) == 1:
+            return _elements[0]
+        if any(element.chain_fork for element in _elements):
+            return Chain(_elements)
+        return FlatChain(_elements)
+
+    def convert(self, element):
+        for converter in self.converters:
+            try:
+                return converter(element)
+            except TypeError:
+                continue
+        return element
+
+    def __call__(self, *elements):
+        return self.link(*elements)
+
+
+DEFAULT_LINKER = ChainLinker()
+
+
 class ChainLink(object):
     r"""
     BaseClass for elements in a chain
@@ -501,40 +539,4 @@ def parallel_chain_converter(element):
         return Bundle(element)
     raise TypeError
 
-
-class ChainLinker(object):
-    """
-    Helper for linking objects to chains
-    """
-    #: functions to convert elements; must return a ChainLink or raise TypeError
-    converters = [parallel_chain_converter]
-
-    def link(self, *elements):
-        _elements = []
-        for element in elements:
-            element = self.convert(element)
-            if isinstance(element, (FlatChain, Chain)):
-                _elements.extend(element.elements)
-            elif hasattr(element, 'elements') and not element.elements:
-                pass
-            else:
-                _elements.append(element)
-        if len(_elements) == 1:
-            return _elements[0]
-        if any(element.chain_fork for element in _elements):
-            return Chain(_elements)
-        return FlatChain(_elements)
-
-    def convert(self, element):
-        for converter in self.converters:
-            try:
-                return converter(element)
-            except TypeError:
-                continue
-        return element
-
-    def __call__(self, *elements):
-        return self.link(*elements)
-
-
-DEFAULT_LINKER = ChainLinker()
+ChainLinker.converters.append(parallel_chain_converter)
