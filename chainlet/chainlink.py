@@ -39,9 +39,12 @@ class _ElementExhausted(Exception):
 
 class ChainLinker(object):
     """
-    Helper for linking objects to chains
+    Helper for linking individual :term:`chainlinks` to form compound :term:`chainlinks`
+
+    This Linker creates a direct implementation of the link structure.
+    It creates the longest :py:class:`~.Chain` possible, reducing the number of separate links.
     """
-    #: functions to convert elements; must return a ChainLink or raise TypeError
+    #: callables to convert elements; must return a ChainLink or raise TypeError
     converters = []
 
     def link(self, *elements):
