@@ -48,10 +48,10 @@ class ChainLinker(object):
         _elements = []
         for element in elements:
             element = self.convert(element)
-            if isinstance(element, (FlatChain, Chain)):
-                _elements.extend(element.elements)
-            elif hasattr(element, 'elements') and not element.elements:
+            if not element:
                 pass
+            elif isinstance(element, (FlatChain, Chain)):
+                _elements.extend(element.elements)
             else:
                 _elements.append(element)
         if len(_elements) == 1:
