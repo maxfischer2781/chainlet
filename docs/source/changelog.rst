@@ -10,6 +10,14 @@ v1.3.0
         * The ``>>`` and ``<<`` operators use reflection precedence to if the left-hand-side element's Linker
           is a subclass of the right-hand-side Linker.
 
+    **Major Changes**
+
+        * The default Linker ignores elements which are ``False`` in a boolean sense, e.g. an empty ``CompoundLink``.
+
+    **Minor Changes**
+
+        * ``CompoundLink`` objects are now considered boolean ``False``.
+
 v1.2.0
 ------
 
