@@ -373,7 +373,7 @@ class CompoundLink(ChainLink):
         Whether the link contains any elements.
     """
     def __init__(self, elements):
-        self.elements = elements
+        self.elements = tuple(elements)
         super(CompoundLink, self).__init__()
 
     def __len__(self):
