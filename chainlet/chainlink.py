@@ -48,15 +48,7 @@ class ChainLinker(object):
     converters = []
 
     def link(self, *elements):
-        _elements = []
-        for element in elements:
-            element = self.convert(element)
-            if not element:
-                pass
-            elif isinstance(element, (FlatChain, Chain)):
-                _elements.extend(element.elements)
-            else:
-                _elements.append(element)
+        _elements = self.normalize(*elements)
         if len(_elements) == 1:
             return _elements[0]
         elif not _elements:
@@ -64,6 +56,26 @@ class ChainLinker(object):
         if any(element.chain_fork or element.chain_join for element in _elements):
             return Chain(_elements)
         return FlatChain(_elements)
+
+    def normalize(self, *elements):
+        """
+        Normalize ``elements`` to a sequence of :py:class:`~.ChainLink`
+
+        :param elements: a sequence of primitive, compound or raw elements
+        :type elements: iterable[ChainLink or object]
+        :return: a flat sequence of individual links
+        :rtype: iterable[ChainLink]
+        """
+        _elements = []
+        for element in elements:
+            element = self.convert(element)
+            if not element:
+                pass
+            elif isinstance(element, Chain):
+                _elements.extend(element.elements)
+            else:
+                _elements.append(element)
+        return _elements
 
     def convert(self, element):
         for converter in self.converters:
