@@ -9,7 +9,7 @@ import numbers
 from . import chainlink
 
 
-class NoOp(chainlink.ChainLink):
+class NoOp(chainlink.NeutralLink):
     """
     A noop element that returns any input unchanged
 
@@ -20,12 +20,12 @@ class NoOp(chainlink.ChainLink):
     .. code:: python
 
         translate = parse_english >> (NoOp(), to_french, to_german)
-    """
-    def chainlet_send(self, value=None):
-        return value
 
+    :note: Unlike the :py:class:`~chainlink.NeutralLink`, this element is not optimized
+           away by linking.
+    """
     def __bool__(self):
-        return False
+        return True
 
     __nonzero__ = __bool__
 
