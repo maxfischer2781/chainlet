@@ -2,3 +2,4 @@ coverage:
   ignore:
     - chainlet_unittests
     - chainlet/__about__.py
+    - chainlet/_debug.py
