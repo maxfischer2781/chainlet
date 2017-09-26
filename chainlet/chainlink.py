@@ -48,14 +48,19 @@ class ChainLinker(object):
     converters = []
 
     def link(self, *elements):
-        _elements = self.normalize(*elements)
-        if len(_elements) == 1:
-            return _elements[0]
-        elif not _elements:
+        elements = self.normalize(*elements)
+        return self.bind_chain(*elements)
+
+    @staticmethod
+    def bind_chain(*elements):
+        """Bind elements to a :py:class:`Chain`"""
+        if len(elements) == 1:
+            return elements[0]
+        elif not elements:
             return NeutralLink()
-        if any(element.chain_fork or element.chain_join for element in _elements):
-            return Chain(_elements)
-        return FlatChain(_elements)
+        if any(element.chain_fork or element.chain_join for element in elements):
+            return Chain(elements)
+        return FlatChain(elements)
 
     def normalize(self, *elements):
         """
