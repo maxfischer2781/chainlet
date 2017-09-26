@@ -59,6 +59,8 @@ class ChainLinker(object):
                 _elements.append(element)
         if len(_elements) == 1:
             return _elements[0]
+        elif not _elements:
+            return NeutralLink()
         if any(element.chain_fork or element.chain_join for element in _elements):
             return Chain(_elements)
         return FlatChain(_elements)
