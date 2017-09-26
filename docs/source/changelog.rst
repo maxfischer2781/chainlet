@@ -18,6 +18,8 @@ v1.3.0
 
         * ``CompoundLink`` objects are now considered boolean ``False``.
 
+        * Added a neutral element for internal use.
+
 v1.2.0
 ------
 
