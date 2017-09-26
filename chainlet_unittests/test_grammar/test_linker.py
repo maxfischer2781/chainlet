@@ -1,5 +1,10 @@
 import itertools
 import unittest
+import operator
+try:
+    _reduce = reduce
+except NameError:
+    from functools import reduce as _reduce
 
 from chainlet.chainlink import FlatChain, Bundle, NeutralLink
 
@@ -49,6 +54,24 @@ class LinkerGrammar(unittest.TestCase):
                     self.assertIs(single_out, singlet)
                     single_in = empty >> singlet
                     self.assertIs(single_in, singlet)
+
+    def test_operator(self):
+        """Programmatic link with operator.rshift/operator.lshift"""
+        chainlets = [NamedChainlet(idx) for idx in range(10)]
+        chain_full = _reduce(operator.rshift, chainlets)
+        self.assertSequenceEqual(chain_full.elements, chainlets)
+        chain_full_inv = _reduce(operator.lshift, chainlets)
+        self.assertSequenceEqual(chain_full_inv.elements, list(reversed(chainlets)))
+        link_chain = NeutralLink()
+        call_chain = NeutralLink()
+        for idx, link in enumerate(chainlets):
+            prev_link_chain, prev_call_chain = link_chain, call_chain
+            link_chain = link_chain >> link
+            call_chain = operator.rshift(call_chain, link)
+            self.assertEqual(link_chain, call_chain)
+            # do not allow mutating existing chain
+            self.assertNotEqual(link_chain, prev_link_chain)
+            self.assertNotEqual(call_chain, prev_call_chain)
 
     def test_empty(self):
         """Empty link as `() >> ()`"""
