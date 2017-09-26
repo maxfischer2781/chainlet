@@ -1,7 +1,7 @@
 import itertools
 import unittest
 
-from chainlet.chainlink import FlatChain, Bundle
+from chainlet.chainlink import FlatChain, Bundle, NeutralLink
 
 from chainlet_unittests.utility import NamedChainlet
 
@@ -40,15 +40,27 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertNotEqual(chain_a_parent_sub, chain_a_parent_full)
 
     def test_single(self):
-        """Empty link as `() >> child_a`"""
+        """Isolated link as `() >> child_a`"""
         chainlets = [NamedChainlet(idx) for idx in range(3)]
         for singlet in chainlets:
-            for empty in (FlatChain(()), Bundle(()), (), set(), [], set()):
+            for empty in (FlatChain(()), Bundle(()), NeutralLink(), (), set(), [], set()):
                 with self.subTest(singlet=singlet, empty=empty):
                     single_out = singlet >> empty
                     self.assertIs(single_out, singlet)
                     single_in = empty >> singlet
                     self.assertIs(single_in, singlet)
+
+    def test_empty(self):
+        """Empty link as `() >> ()`"""
+        for empty_a in (FlatChain(()), Bundle(()), NeutralLink()):
+            for empty_b in (FlatChain(()), Bundle(()), NeutralLink(), (), set(), [], set()):
+                with self.subTest(empty_a=empty_a, empty_b=empty_b):
+                    chain = empty_a >> empty_b
+                    self.assertIsInstance(chain, NeutralLink)
+                    chain = empty_b >> empty_a
+                    self.assertIsInstance(chain, NeutralLink)
+                    chain = empty_a >> empty_b >> empty_a >> empty_b
+                    self.assertIsInstance(chain, NeutralLink)
 
     def test_parallel(self):
         """Parallel link as `parent >> (child_a, child_b, ...)` and `(parent_a, parent_b, ...) >> child`"""
