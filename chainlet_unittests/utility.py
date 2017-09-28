@@ -9,18 +9,13 @@ class NamedChainlet(chainlet.dataflow.NoOp):
     def __init__(self, name):
         self.name = name
 
-    def __bool__(self):
-        return True
-
-    __nonzero__ = __bool__
-
     def __repr__(self):
         return '%s' % self.name
 
 
 class Adder(NamedChainlet):
     def __init__(self, value=2):
-        NamedChainlet.__init__(self, name='%+d' % value)
+        NamedChainlet.__init__(self, name='<%+d>' % value)
         self.value = value
 
     def chainlet_send(self, value=None):
