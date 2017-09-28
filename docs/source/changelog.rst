@@ -12,7 +12,9 @@ v1.3.0
 
     **Major Changes**
 
-        * The default Linker ignores elements which are ``False`` in a boolean sense, e.g. an empty ``CompoundLink``.
+        * Deprecated the use of external linkers in favour of operator+constructor.
+
+        * Linking to chains ignores elements which are ``False`` in a boolean sense, e.g. an empty ``CompoundLink``.
 
     **Minor Changes**
 
