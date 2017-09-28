@@ -528,6 +528,11 @@ class Chain(CompoundLink):
     chain_join = False
     chain_fork = False
 
+    def __new__(cls, elements):
+        if not any(element.chain_fork or element.chain_join for element in cls._flatten(elements)):
+            return super(Chain, cls).__new__(cls.chain_types.flat_chain_type)
+        return super(Chain, cls).__new__(cls.chain_types.chain_type)
+
     def __init__(self, elements):
         super(Chain, self).__init__(self._flatten(elements))
         if elements:
