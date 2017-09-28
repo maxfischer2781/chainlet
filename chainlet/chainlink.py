@@ -37,68 +37,12 @@ class _ElementExhausted(Exception):
     """An element has no more values to produce"""
 
 
-class ChainLinker(object):
-    """
-    Helper for linking individual :term:`chainlinks` to form compound :term:`chainlinks`
-
-    This Linker creates a direct implementation of the link structure.
-    It creates the longest :py:class:`~.Chain` possible, reducing the number of separate links.
-    """
-    #: callables to convert elements; must return a ChainLink or raise TypeError
-    converters = []
-
-    def link(self, *elements):
-        elements = self.normalize(*elements)
-        return self.bind_chain(*elements)
-
-    @staticmethod
-    def bind_chain(*elements):
-        """Bind elements to a :py:class:`Chain`"""
-        if len(elements) == 1:
-            return elements[0]
-        elif not elements:
-            return NeutralLink()
-        if any(element.chain_fork or element.chain_join for element in elements):
-            return Chain(elements)
-        return FlatChain(elements)
-
-    def normalize(self, *elements):
-        """
-        Normalize ``elements`` to a sequence of :py:class:`~.ChainLink`
-
-        :param elements: a sequence of primitive, compound or raw elements
-        :type elements: iterable[ChainLink or object]
-        :return: a flat sequence of individual links
-        :rtype: iterable[ChainLink]
-        """
-        _elements = []
-        for element in elements:
-            element = self.convert(element)
-            if not element:
-                pass
-            elif isinstance(element, Chain):
-                _elements.extend(element.elements)
-            else:
-                _elements.append(element)
-        return _elements
-
-    def convert(self, element):
-        for converter in self.converters:
-            try:
-                return converter(element)
-            except TypeError:
-                continue
-        return element
-
-    def __call__(self, *elements):
-        return self.link(*elements)
-
-
 class ChainTypes(object):
     """
-    Helper for converting elements to :term:`chainlinks`
+    Helper for primitives/types forming chains
 
-    :warning: This is an internal API helper.
+    :warning: This is an internal, WIP helper.
+              Names, APIs and signatures are subject to change.
     """
     #: callables to convert elements; must return a ChainLink or raise TypeError
     _converters = []
@@ -236,7 +180,6 @@ class ChainLink(object):
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
-    chain_linker = ChainLinker()
     chain_types = ChainTypes()
     #: whether this element processes several data chunks at once
     chain_join = False
@@ -664,14 +607,6 @@ class FlatChain(Chain):
             # whoever catches it can extract a potential early return value
             value = element.chainlet_send(value)
         return value
-
-
-def parallel_chain_converter(element):
-    if isinstance(element, (tuple, list, set)):
-        return Bundle(element)
-    raise TypeError
-
-ChainLinker.converters.append(parallel_chain_converter)
 
 
 def bundle_sequences(element):
