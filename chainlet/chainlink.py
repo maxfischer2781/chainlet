@@ -338,6 +338,11 @@ class NeutralLink(ChainLink):
 
     __nonzero__ = __bool__
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return bool(self) == bool(other)
+        return NotImplemented
+
     def __str__(self):
         return self.__class__.__name__
 
