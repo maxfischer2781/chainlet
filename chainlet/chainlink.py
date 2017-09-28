@@ -94,6 +94,55 @@ class ChainLinker(object):
         return self.link(*elements)
 
 
+class ChainTypes(object):
+    """
+    Helper for converting elements to :term:`chainlinks`
+
+    :warning: This is an internal API helper.
+    """
+    #: callables to convert elements; must return a ChainLink or raise TypeError
+    _converters = []
+    _instance = None
+    chain_type = None  # type: Type[Chain]
+    flat_chain_type = None  # type: Type[FlatChain]
+    bundle_type = None  # type: Type[Bundle]
+
+    def __new__(cls):
+        if cls._instance is None or type(cls._instance) is not cls:
+            cls._instance = object.__new__(cls)
+            cls._converters = []
+        return cls._instance
+
+    def convert(self, element):
+        if isinstance(element, ChainLink):
+            return element
+        for converter in self.converters:
+            link = converter(element)
+            if link is not NotImplemented:
+                return link
+        raise TypeError('%r cannot be converted to a chainlink' % element)
+
+    @property
+    def converters(self):
+        for cls in self.__class__.mro():
+            for converter in cls._converters:
+                yield converter
+
+    @classmethod
+    def add_converter(cls, converter):
+        """
+        Add a converter to this Converter type and all its children
+
+        Each converter is a callable with the signature
+
+        .. py:function:: converter(element: object) -> :py:class:`ChainLink`
+
+        and must create a :py:class:`ChainLink` for any valid ``element`` input.
+        For any ``element`` that is not valid input, :py:const:`NotImplemented` must be returned.
+        """
+        cls._converters.append(converter)
+
+
 class ChainLink(object):
     r"""
     BaseClass for elements in a chain
@@ -188,6 +237,7 @@ class ChainLink(object):
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
     chain_linker = ChainLinker()
+    chain_types = ChainTypes()
     #: whether this element processes several data chunks at once
     chain_join = False
     #: whether this element produces several data chunks at once
@@ -616,3 +666,14 @@ def parallel_chain_converter(element):
     raise TypeError
 
 ChainLinker.converters.append(parallel_chain_converter)
+
+
+def bundle_sequences(element):
+    if isinstance(element, (tuple, list, set)):
+        return Bundle(element)
+    return NotImplemented
+
+ChainTypes.add_converter(bundle_sequences)
+ChainTypes.chain_type = Chain
+ChainTypes.flat_chain_type = FlatChain
+ChainTypes.bundle_type = Bundle
