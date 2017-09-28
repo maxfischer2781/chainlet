@@ -254,11 +254,12 @@ class ChainLink(object):
             return linkers
 
     def _link(self, parent, child):
-        for linker in self._get_linkers(parent, child):
-            link = linker(parent, child)
-            if link is not NotImplemented:
-                return link
-        return NotImplemented
+        b = self.chain_types.chain_type((parent, child))
+        if not b:
+            b = NeutralLink()
+        elif len(b) == 1:
+            b = b[0]
+        return b
 
     def __rshift__(self, child):
         """
@@ -269,7 +270,7 @@ class ChainLink(object):
         :returns: link between self and child
         :rtype: FlatChain, Bundle or Chain
         """
-        return self._link(self, child)
+        return self._link(self, self.chain_types.convert(child))
 
     def __rrshift__(self, parent):
         # parent >> self
@@ -284,7 +285,7 @@ class ChainLink(object):
         :returns: link between self and children
         :rtype: FlatChain, Bundle or Chain
         """
-        return self._link(parent, self)
+        return self._link(self.chain_types.convert(parent), self)
 
     def __rlshift__(self, child):
         # child << self
