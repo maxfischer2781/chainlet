@@ -506,20 +506,6 @@ class Chain(CompoundLink):
                 return False
         return False
 
-    def _iter_flat(self):
-        for item in self._iter_fork():
-            yield item[0]
-
-    def send(self, value=None):
-        """Send a value to this element for processing"""
-        try:
-            result = super(Chain, self).send(value)
-            if self.chain_fork:
-                return result
-            return next(iter(result))
-        except _ElementExhausted:
-            raise StopIteration
-
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
         if self.chain_join:
@@ -536,17 +522,24 @@ class Chain(CompoundLink):
                     values = self._send_1_to_m(element, values)
                 # neither fork nor join, unwrap input and output
                 elif not element.chain_join and not element.chain_fork:
-                    values = self._send_1_to_1(element, values)
+                    values = list(self._send_1_to_1(element, values))
                 elif element.chain_join and not element.chain_fork:
                     values = self._send_n_to_1(element, values)
                 else:
                     raise NotImplementedError
                 if not values:
                     break
-            return values
         # An element in the chain is exhausted permanently
         except _ElementExhausted:
             raise StopIteration
+        else:
+            if self.chain_fork:
+                return values
+            else:
+                try:
+                    return values[0]
+                except IndexError:
+                    raise StopTraversal
 
     @staticmethod
     def _send_n_to_m(element, values):
