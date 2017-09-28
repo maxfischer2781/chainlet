@@ -452,6 +452,12 @@ class Chain(CompoundLink):
     """
     A group of chainlets that sequentially process each :term:`data chunk`
 
+    :param elements: the chainlets making up this chain
+    :type elements: iterable[:py:class:`ChainLink`]
+
+    :note: If ``elements`` contains a :py:class:`~.Chain`, this is flattened
+           and any sub-elements are directly included in the new :py:class:`~.Chain`.
+
     Slicing a chain guarantees consistency of the sum of parts and the chain.
     Linking an ordered, complete sequence of subslices recreates an equivalent chain.
 
@@ -473,10 +479,21 @@ class Chain(CompoundLink):
     chain_fork = False
 
     def __init__(self, elements):
-        super(Chain, self).__init__(elements)
+        super(Chain, self).__init__(self._flatten(elements))
         if elements:
             self.chain_fork = self._chain_forks(elements)
             self.chain_join = elements[0].chain_join
+
+    @staticmethod
+    def _flatten(elements):
+        for element in elements:
+            if not element:
+                continue
+            elif isinstance(element, Chain):
+                for sub_element in element.elements:
+                    yield sub_element
+            else:
+                yield element
 
     @staticmethod
     def _chain_forks(elements):
