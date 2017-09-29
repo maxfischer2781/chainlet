@@ -186,16 +186,6 @@ class ChainLink(object):
     #: whether this element produces several data chunks at once
     chain_fork = False
 
-    @staticmethod
-    def _get_linkers(parent, child):
-        linkers = [element.chain_linker for element in (parent, child) if hasattr(element, 'chain_linker')]
-        if linkers[0] == linkers[-1]:  # this catches duplicate and missing linkers
-            return linkers[:1]
-        else:
-            if issubclass(type(linkers[-1]), type(linkers[0])):
-                return reversed(linkers)
-            return linkers
-
     def _link(self, parent, child):
         b = self.chain_types.chain_type((parent, child))
         if not b:
