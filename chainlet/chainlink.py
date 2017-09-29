@@ -521,24 +521,23 @@ class Chain(CompoundLink):
                     values = self._send_1_to_m(element, values)
                 # neither fork nor join, unwrap input and output
                 elif not element.chain_join and not element.chain_fork:
-                    values = list(self._send_1_to_1(element, values))
+                    values = self._send_1_to_1(element, values)
                 elif element.chain_join and not element.chain_fork:
                     values = self._send_n_to_1(element, values)
                 else:
                     raise NotImplementedError
                 if not values:
                     break
+            if self.chain_fork:
+                return list(values)
+            else:
+                try:
+                    return next(iter(values))
+                except IndexError:
+                    raise StopTraversal
         # An element in the chain is exhausted permanently
         except _ElementExhausted:
             raise StopIteration
-        else:
-            if self.chain_fork:
-                return values
-            else:
-                try:
-                    return values[0]
-                except IndexError:
-                    raise StopTraversal
 
     @staticmethod
     def _send_n_to_m(element, values):
