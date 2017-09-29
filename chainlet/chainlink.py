@@ -52,7 +52,7 @@ class ChainTypes(object):
     bundle_type = None  # type: Type[Bundle]
 
     def __new__(cls):
-        if cls._instance is None or type(cls._instance) is not cls:
+        if not cls.__dict__.get('_instance'):
             cls._instance = object.__new__(cls)
             cls._converters = []
         return cls._instance
