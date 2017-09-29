@@ -22,6 +22,10 @@ v1.3.0
 
         * Added a neutral element for internal use.
 
+    **Bug Fixes**
+
+        * Correctly unwrapping return value for any ``Chain`` which does not ``fork``.
+
 v1.2.0
 ------
 
