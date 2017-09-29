@@ -37,61 +37,54 @@ class _ElementExhausted(Exception):
     """An element has no more values to produce"""
 
 
-class ChainLinker(object):
+class ChainTypes(object):
     """
-    Helper for linking individual :term:`chainlinks` to form compound :term:`chainlinks`
+    Helper for primitives/types forming chains
 
-    This Linker creates a direct implementation of the link structure.
-    It creates the longest :py:class:`~.Chain` possible, reducing the number of separate links.
+    :warning: This is an internal, WIP helper.
+              Names, APIs and signatures are subject to change.
     """
     #: callables to convert elements; must return a ChainLink or raise TypeError
-    converters = []
+    _converters = []
+    _instance = None
+    chain_type = None  # type: Type[Chain]
+    flat_chain_type = None  # type: Type[FlatChain]
+    bundle_type = None  # type: Type[Bundle]
 
-    def link(self, *elements):
-        elements = self.normalize(*elements)
-        return self.bind_chain(*elements)
-
-    @staticmethod
-    def bind_chain(*elements):
-        """Bind elements to a :py:class:`Chain`"""
-        if len(elements) == 1:
-            return elements[0]
-        elif not elements:
-            return NeutralLink()
-        if any(element.chain_fork or element.chain_join for element in elements):
-            return Chain(elements)
-        return FlatChain(elements)
-
-    def normalize(self, *elements):
-        """
-        Normalize ``elements`` to a sequence of :py:class:`~.ChainLink`
-
-        :param elements: a sequence of primitive, compound or raw elements
-        :type elements: iterable[ChainLink or object]
-        :return: a flat sequence of individual links
-        :rtype: iterable[ChainLink]
-        """
-        _elements = []
-        for element in elements:
-            element = self.convert(element)
-            if not element:
-                pass
-            elif isinstance(element, Chain):
-                _elements.extend(element.elements)
-            else:
-                _elements.append(element)
-        return _elements
+    def __new__(cls):
+        if not cls.__dict__.get('_instance'):
+            cls._instance = object.__new__(cls)
+            cls._converters = []
+        return cls._instance
 
     def convert(self, element):
+        if isinstance(element, ChainLink):
+            return element
         for converter in self.converters:
-            try:
-                return converter(element)
-            except TypeError:
-                continue
-        return element
+            link = converter(element)
+            if link is not NotImplemented:
+                return link
+        raise TypeError('%r cannot be converted to a chainlink' % element)
 
-    def __call__(self, *elements):
-        return self.link(*elements)
+    @property
+    def converters(self):
+        for cls in self.__class__.mro():
+            for converter in cls._converters:
+                yield converter
+
+    @classmethod
+    def add_converter(cls, converter):
+        """
+        Add a converter to this Converter type and all its children
+
+        Each converter is a callable with the signature
+
+        .. py:function:: converter(element: object) -> :py:class:`ChainLink`
+
+        and must create a :py:class:`ChainLink` for any valid ``element`` input.
+        For any ``element`` that is not valid input, :py:const:`NotImplemented` must be returned.
+        """
+        cls._converters.append(converter)
 
 
 class ChainLink(object):
@@ -187,28 +180,19 @@ class ChainLink(object):
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
-    chain_linker = ChainLinker()
+    chain_types = ChainTypes()
     #: whether this element processes several data chunks at once
     chain_join = False
     #: whether this element produces several data chunks at once
     chain_fork = False
 
-    @staticmethod
-    def _get_linkers(parent, child):
-        linkers = [element.chain_linker for element in (parent, child) if hasattr(element, 'chain_linker')]
-        if linkers[0] == linkers[-1]:  # this catches duplicate and missing linkers
-            return linkers[:1]
-        else:
-            if issubclass(type(linkers[-1]), type(linkers[0])):
-                return reversed(linkers)
-            return linkers
-
     def _link(self, parent, child):
-        for linker in self._get_linkers(parent, child):
-            link = linker(parent, child)
-            if link is not NotImplemented:
-                return link
-        return NotImplemented
+        b = self.chain_types.chain_type((parent, child))
+        if not b:
+            b = NeutralLink()
+        elif len(b) == 1:
+            b = b[0]
+        return b
 
     def __rshift__(self, child):
         """
@@ -219,7 +203,7 @@ class ChainLink(object):
         :returns: link between self and child
         :rtype: FlatChain, Bundle or Chain
         """
-        return self._link(self, child)
+        return self._link(self, self.chain_types.convert(child))
 
     def __rrshift__(self, parent):
         # parent >> self
@@ -234,7 +218,7 @@ class ChainLink(object):
         :returns: link between self and children
         :rtype: FlatChain, Bundle or Chain
         """
-        return self._link(parent, self)
+        return self._link(self.chain_types.convert(parent), self)
 
     def __rlshift__(self, child):
         # child << self
@@ -337,6 +321,11 @@ class NeutralLink(ChainLink):
         return False
 
     __nonzero__ = __bool__
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return bool(self) == bool(other)
+        return NotImplemented
 
     def __str__(self):
         return self.__class__.__name__
@@ -447,6 +436,12 @@ class Chain(CompoundLink):
     """
     A group of chainlets that sequentially process each :term:`data chunk`
 
+    :param elements: the chainlets making up this chain
+    :type elements: iterable[:py:class:`ChainLink`]
+
+    :note: If ``elements`` contains a :py:class:`~.Chain`, this is flattened
+           and any sub-elements are directly included in the new :py:class:`~.Chain`.
+
     Slicing a chain guarantees consistency of the sum of parts and the chain.
     Linking an ordered, complete sequence of subslices recreates an equivalent chain.
 
@@ -467,11 +462,27 @@ class Chain(CompoundLink):
     chain_join = False
     chain_fork = False
 
+    def __new__(cls, elements):
+        if not any(element.chain_fork or element.chain_join for element in cls._flatten(elements)):
+            return super(Chain, cls).__new__(cls.chain_types.flat_chain_type)
+        return super(Chain, cls).__new__(cls.chain_types.chain_type)
+
     def __init__(self, elements):
-        super(Chain, self).__init__(elements)
+        super(Chain, self).__init__(self._flatten(elements))
         if elements:
             self.chain_fork = self._chain_forks(elements)
             self.chain_join = elements[0].chain_join
+
+    @staticmethod
+    def _flatten(elements):
+        for element in elements:
+            if not element:
+                continue
+            elif isinstance(element, Chain):
+                for sub_element in element.elements:
+                    yield sub_element
+            else:
+                yield element
 
     @staticmethod
     def _chain_forks(elements):
@@ -483,20 +494,6 @@ class Chain(CompoundLink):
             elif element.chain_join:
                 return False
         return False
-
-    def _iter_flat(self):
-        for item in self._iter_fork():
-            yield item[0]
-
-    def send(self, value=None):
-        """Send a value to this element for processing"""
-        try:
-            result = super(Chain, self).send(value)
-            if self.chain_fork:
-                return result
-            return next(iter(result))
-        except _ElementExhausted:
-            raise StopIteration
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
@@ -521,7 +518,13 @@ class Chain(CompoundLink):
                     raise NotImplementedError
                 if not values:
                     break
-            return values
+            if self.chain_fork:
+                return list(values)
+            else:
+                try:
+                    return next(iter(values))
+                except IndexError:
+                    raise StopTraversal
         # An element in the chain is exhausted permanently
         except _ElementExhausted:
             raise StopIteration
@@ -595,9 +598,12 @@ class FlatChain(Chain):
         return value
 
 
-def parallel_chain_converter(element):
+def bundle_sequences(element):
     if isinstance(element, (tuple, list, set)):
         return Bundle(element)
-    raise TypeError
+    return NotImplemented
 
-ChainLinker.converters.append(parallel_chain_converter)
+ChainTypes.add_converter(bundle_sequences)
+ChainTypes.chain_type = Chain
+ChainTypes.flat_chain_type = FlatChain
+ChainTypes.bundle_type = Bundle
