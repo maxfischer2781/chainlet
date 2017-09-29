@@ -85,12 +85,13 @@ class WrapperMixin(object):
                     slave = self.__init_slave__(self._raw_slave, *slave_args, **slave_kwargs)
                     super(Wraplet, self).__init__(slave, *cls_args, **cls_kwargs)
 
-                def __repr__(self):
-                    return '<%s wrapper %s.%s at %x>' % (
-                        self.__class__.__name__, self.__module__,
-                        self.__class__.__qualname__,
-                        id(self)
-                    )
+                if cls.__repr__ == WrapperMixin.__repr__:
+                    def __repr__(self):
+                        return '<%s.%s wraplet at %x>' % (
+                            self.__module__,
+                            self.__class__.__qualname__,
+                            id(self)
+                        )
 
             # swap places with our target so that both can be pickled/unpickled
             Wraplet.__name__ = getname(raw_slave).split('.')[-1]
