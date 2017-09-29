@@ -187,12 +187,16 @@ class ChainLink(object):
     chain_fork = False
 
     def _link(self, parent, child):
-        b = self.chain_types.chain_type((parent, child))
-        if not b:
-            b = NeutralLink()
-        elif len(b) == 1:
-            b = b[0]
-        return b
+        """Link the chainlinks parent to child"""
+        chain = self.chain_types.chain_type((parent, child))
+        # avoid having arbitrary type for empty links
+        if not chain:
+            return NeutralLink()
+        # avoid useless nesting
+        elif len(chain) == 1:
+            return chain[0]
+        else:
+            return chain
 
     def __rshift__(self, child):
         """
@@ -201,7 +205,7 @@ class ChainLink(object):
         :param child: following link to bind
         :type child: ChainLink or iterable[ChainLink]
         :returns: link between self and child
-        :rtype: FlatChain, Bundle or Chain
+        :rtype: ChainLink, FlatChain, Bundle or Chain
         """
         return self._link(self, self.chain_types.convert(child))
 
@@ -216,7 +220,7 @@ class ChainLink(object):
         :param parent: preceding link to bind
         :type parent: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: FlatChain, Bundle or Chain
+        :rtype: ChainLink, FlatChain, Bundle or Chain
         """
         return self._link(self.chain_types.convert(parent), self)
 
