@@ -58,6 +58,13 @@ class WrapperMixin(object):
             id(self)
         )
 
+    def __wraplet_repr__(self):
+        return '<%s.%s wraplet at %x>' % (
+            self.__module__,
+            self.__class__.__qualname__,
+            id(self)
+        )
+
     def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
         raise NotImplementedError
 
@@ -85,13 +92,7 @@ class WrapperMixin(object):
                     slave = self.__init_slave__(self._raw_slave, *slave_args, **slave_kwargs)
                     super(Wraplet, self).__init__(slave, *cls_args, **cls_kwargs)
 
-                if cls.__repr__ == WrapperMixin.__repr__:
-                    def __repr__(self):
-                        return '<%s.%s wraplet at %x>' % (
-                            self.__module__,
-                            self.__class__.__qualname__,
-                            id(self)
-                        )
+                __repr__ = cls.__wraplet_repr__
 
             # swap places with our target so that both can be pickled/unpickled
             Wraplet.__name__ = getname(raw_slave).split('.')[-1]
