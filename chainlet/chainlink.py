@@ -66,6 +66,9 @@ class ChainTypes(object):
                 return link
         raise TypeError('%r cannot be converted to a chainlink' % element)
 
+    def supersedes(self, other):
+        return isinstance(self, type(other)) and type(other) != type(self)
+
     @property
     def converters(self):
         for cls in self.__class__.mro():
@@ -207,7 +210,12 @@ class ChainLink(object):
         :returns: link between self and child
         :rtype: ChainLink, FlatChain, Bundle or Chain
         """
-        return self._link(self, self.chain_types.convert(child))
+        # NOTE: The semantics and details for superseding operators
+        #       are NOT part of a stable API.
+        child = self.chain_types.convert(child)
+        if child.chain_types.supersedes(self.chain_types):
+            return child << self
+        return self._link(self, child)
 
     def __rrshift__(self, parent):
         # parent >> self
@@ -222,7 +230,12 @@ class ChainLink(object):
         :returns: link between self and children
         :rtype: ChainLink, FlatChain, Bundle or Chain
         """
-        return self._link(self.chain_types.convert(parent), self)
+        # -- type hierarchy based reflection
+        # see note on __rshift__
+        parent = self.chain_types.convert(parent)
+        if parent.chain_types.supersedes(self.chain_types):
+            return parent >> self
+        return self._link(parent, self)
 
     def __rlshift__(self, child):
         # child << self
