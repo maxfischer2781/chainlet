@@ -72,8 +72,11 @@ class ChainTypes(object):
     @property
     def converters(self):
         for cls in self.__class__.mro():
-            for converter in cls._converters:
-                yield converter
+            try:
+                for converter in cls._converters:
+                    yield converter
+            except AttributeError:
+                pass
 
     @classmethod
     def add_converter(cls, converter):
