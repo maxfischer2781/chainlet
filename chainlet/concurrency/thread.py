@@ -61,36 +61,11 @@ class ReturnThread(threading.Thread):
         return self._return_value
 
 
-class ThreadChainTypes(chainlink.ChainTypes):
+class ThreadLinkPrimitives(chainlink.LinkPrimitives):
     pass
 
 
-class ThreadCompoundChainMixin(object):
-    chain_types = ThreadChainTypes()
-
-    def __rshift__(self, child):
-        print('chain rshift')
-        child = self.chain_types.convert(child)
-        print(child, self)
-        if isinstance(self.elements[-1], self.chain_types.bundle_type):
-            return self._link(self[:-1], self.elements[-1] >> child)
-        return self._link(self, child)
-
-    def __rrshift__(self, parent):
-        # parent >> self
-        print('chain rrshift')
-        return self << parent
-
-
-class ThreadChain(ThreadCompoundChainMixin, chainlink.Chain):
-    pass
-
-
-class ThreadFlatChain(chainlink.FlatChain, ThreadChain):
-    pass
-
-
-class ThreadBundle(ThreadCompoundChainMixin, chainlink.Bundle):
+class ThreadBundle(chainlink.Bundle):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
@@ -98,10 +73,12 @@ class ThreadBundle(ThreadCompoundChainMixin, chainlink.Bundle):
     blocking actions, such as file I/O or :py:func:`time.sleep`,
     to be run in parallel.
     """
+    chain_types = ThreadLinkPrimitives()
+
     def _link_child(self, child):
         if child.chain_join:
             return self._link(self, child)
-        return self.chain_types.bundle_type(
+        return self.chain_types.base_bundle_type(
             sub_chain >> child for sub_chain in self.elements
         )
 
@@ -114,7 +91,6 @@ class ThreadBundle(ThreadCompoundChainMixin, chainlink.Bundle):
         :returns: link between self and child
         :rtype: ChainLink, FlatChain, Bundle or Chain
         """
-        print('rshift')
         return self._link_child(self.chain_types.convert(child))
 
     def chainlet_send(self, value=None):
@@ -160,9 +136,7 @@ class ThreadBundle(ThreadCompoundChainMixin, chainlink.Bundle):
         return results
 
 
-ThreadChainTypes.chain_type = ThreadChain
-ThreadChainTypes.flat_chain_type = ThreadChain
-ThreadChainTypes.bundle_type = ThreadBundle
+ThreadLinkPrimitives.base_bundle_type = ThreadBundle
 
 
 if __name__ == "__main__":
