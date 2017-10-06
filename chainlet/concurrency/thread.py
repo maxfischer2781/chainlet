@@ -1,3 +1,6 @@
+"""
+Thread based concurrency domain
+"""
 from __future__ import print_function
 import sys
 import threading
@@ -53,8 +56,10 @@ class ReturnThread(threading.Thread):
     @property
     def return_value(self):
         if self._return_value is _THREAD_NOT_DONE:
-            if not self.is_alive():
+            try:
                 self.start()
+            except RuntimeError:
+                pass
             self.join()
         if self._exception_value is not None:
             raise self._exception_value
