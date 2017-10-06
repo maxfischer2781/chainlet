@@ -1,14 +1,31 @@
 import itertools
 import unittest
+import time
 
 import chainlet
+import chainlet.dataflow
 
 from chainlet_unittests.utility import Adder, produce
+
+
+@chainlet.funclet
+def sleep(value, seconds):
+    time.sleep(seconds)
+    return value
 
 
 class PrimitiveTestCases(object):
     class ConcurrentBundle(unittest.TestCase):
         bundle_type = chainlet.chainlink.Bundle
+
+        def test_concurrent(self):
+            """concurrent sleep"""
+            sleep_chain = chainlet.dataflow.NoOp() >> self.bundle_type((sleep(seconds=0.1) for _ in range(5)))
+            start_time = time.time()
+            result = sleep_chain.send(1)
+            end_time = time.time()
+            self.assertEqual(result, [1, 1, 1, 1, 1])
+            self.assertLess(end_time - start_time, 0.5)
 
         def test_simple(self):
             """simple bundle as `a >> (b, c)`"""
