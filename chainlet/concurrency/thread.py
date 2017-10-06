@@ -2,7 +2,6 @@
 Thread based concurrency domain
 """
 from __future__ import print_function
-import sys
 import threading
 
 from .. import chainlink
@@ -11,59 +10,30 @@ from .. import chainlink
 _THREAD_NOT_DONE = object()
 
 
-class ReturnThread(threading.Thread):
-    def __init__(self, *iargs, **ikwargs):
-        super(ReturnThread, self).__init__(*iargs, **ikwargs)
-        self._return_value = _THREAD_NOT_DONE
-        self._exception_value = None
+class ThreadedCall(object):
+    def __init__(self, func, *args, **kwargs):
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+        self._result = None
+        self._thread = threading.Thread(target=self)
+        self._thread.start()
 
-    if sys.version_info[0] < 3:
-        @property
-        def _target(self):
-            return self._Thread__target
-
-        @_target.deleter
-        def _target(self):
-            del self._Thread__target
-
-        @property
-        def _args(self):
-            return self._Thread__args
-
-        @_args.deleter
-        def _args(self):
-            del self._Thread__args
-
-        @property
-        def _kwargs(self):
-            return self._Thread__kwargs
-
-        @_kwargs.deleter
-        def _kwargs(self):
-            del self._Thread__kwargs
-
-    def run(self):
+    def __call__(self):
         try:
-            if self._target:
-                self._return_value = self._target(*self._args, **self._kwargs)
-        except (StopIteration, chainlink.StopTraversal) as err:
-            self._exception_value = err
-        finally:
-            # Avoid a refcycle if the thread is running a function with
-            # an argument that has a member that points to the thread.
-            del self._target, self._args, self._kwargs
+            self._result = self._func(*self._args, **self._kwargs), None
+        except Exception as err:
+            self._result = None, err
+        del self._func, self._args, self._kwargs
 
     @property
     def return_value(self):
-        if self._return_value is _THREAD_NOT_DONE:
-            try:
-                self.start()
-            except RuntimeError:
-                pass
-            self.join()
-        if self._exception_value is not None:
-            raise self._exception_value
-        return self._return_value
+        if self._result is None:
+            self._thread.join()
+        result, error = self._result
+        if error:
+            raise error
+        return result
 
 
 class ThreadLinkPrimitives(chainlink.LinkPrimitives):
@@ -105,12 +75,10 @@ class ThreadBundle(chainlink.Bundle):
     def _dispath_send(self, value):
         result_threads = []
         for element in self.elements:
-            send_thread = ReturnThread(target=element.chainlet_send, args=(value,))
-            send_thread.start()
             result_threads.append((
                 element.chain_join,
                 element.chain_fork,
-                send_thread
+                ThreadedCall(element.chainlet_send, value)
             ))
         return result_threads
 
