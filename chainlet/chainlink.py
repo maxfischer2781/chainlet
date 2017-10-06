@@ -37,9 +37,9 @@ class _ElementExhausted(Exception):
     """An element has no more values to produce"""
 
 
-class ChainTypes(object):
+class LinkPrimitives(object):
     """
-    Helper for primitives/types forming chains
+    Primitives used in a linker domain
 
     :warning: This is an internal, WIP helper.
               Names, APIs and signatures are subject to change.
@@ -47,9 +47,14 @@ class ChainTypes(object):
     #: callables to convert elements; must return a ChainLink or raise TypeError
     _converters = []
     _instance = None
-    chain_type = None  # type: Type[Chain]
+    #: the basic :term:`chainlink` type from which all primitives of this domain derive
+    base_link_type = None  # type: Type[ChainLink]
+    #: the basic :term:`chain` type holding sequences of :term:`chainlinks <chainlink>`
+    base_chain_type = None  # type: Type[Chain]
+    #: the flat :term:`chain` type holding sequences of simple :term:`chainlinks <chainlink>`
     flat_chain_type = None  # type: Type[FlatChain]
-    bundle_type = None  # type: Type[Bundle]
+    #: the basic :term:`bundle` type holding groups of concurrent :term:`chainlinks <chainlink>`
+    base_bundle_type = None  # type: Type[Bundle]
 
     def __new__(cls):
         if not cls.__dict__.get('_instance'):
@@ -66,11 +71,17 @@ class ChainTypes(object):
                 return link
         raise TypeError('%r cannot be converted to a chainlink' % element)
 
+    def supersedes(self, other):
+        return isinstance(self, type(other)) and type(other) != type(self)
+
     @property
     def converters(self):
         for cls in self.__class__.mro():
-            for converter in cls._converters:
-                yield converter
+            try:
+                for converter in cls._converters:
+                    yield converter
+            except AttributeError:
+                pass
 
     @classmethod
     def add_converter(cls, converter):
@@ -180,19 +191,23 @@ class ChainLink(object):
 
     .. _Generator-Iterator Methods: https://docs.python.org/3/reference/expressions.html#generator-iterator-methods
     """
-    chain_types = ChainTypes()
+    chain_types = LinkPrimitives()
     #: whether this element processes several data chunks at once
     chain_join = False
     #: whether this element produces several data chunks at once
     chain_fork = False
 
     def _link(self, parent, child):
-        b = self.chain_types.chain_type((parent, child))
-        if not b:
-            b = NeutralLink()
-        elif len(b) == 1:
-            b = b[0]
-        return b
+        """Link the chainlinks parent to child"""
+        chain = self.chain_types.base_chain_type((parent, child))
+        # avoid having arbitrary type for empty links
+        if not chain:
+            return NeutralLink()
+        # avoid useless nesting
+        elif len(chain) == 1:
+            return chain[0]
+        else:
+            return chain
 
     def __rshift__(self, child):
         """
@@ -201,9 +216,10 @@ class ChainLink(object):
         :param child: following link to bind
         :type child: ChainLink or iterable[ChainLink]
         :returns: link between self and child
-        :rtype: FlatChain, Bundle or Chain
+        :rtype: ChainLink, FlatChain, Bundle or Chain
         """
-        return self._link(self, self.chain_types.convert(child))
+        child = self.chain_types.convert(child)
+        return self._link(self, child)
 
     def __rrshift__(self, parent):
         # parent >> self
@@ -211,14 +227,15 @@ class ChainLink(object):
 
     def __lshift__(self, parent):
         """
-        self << parents
+        self << parent
 
         :param parent: preceding link to bind
         :type parent: ChainLink or iterable[ChainLink]
         :returns: link between self and children
-        :rtype: FlatChain, Bundle or Chain
+        :rtype: ChainLink, FlatChain, Bundle or Chain
         """
-        return self._link(self.chain_types.convert(parent), self)
+        parent = self.chain_types.convert(parent)
+        return self._link(parent, self)
 
     def __rlshift__(self, child):
         # child << self
@@ -458,6 +475,10 @@ class Chain(CompoundLink):
         temp_value = chain[:i].send(value)
         split_result = chain[i:].send(temp_value)
         chain_result == temp_value
+
+    :note: Some optimised chainlets may assimilate subsequent chainlets during linking.
+           The rules for splitting chains still apply, though the actual chain elements
+           may differ from the provided ones.
     """
     chain_join = False
     chain_fork = False
@@ -465,7 +486,7 @@ class Chain(CompoundLink):
     def __new__(cls, elements):
         if not any(element.chain_fork or element.chain_join for element in cls._flatten(elements)):
             return super(Chain, cls).__new__(cls.chain_types.flat_chain_type)
-        return super(Chain, cls).__new__(cls.chain_types.chain_type)
+        return super(Chain, cls).__new__(cls.chain_types.base_chain_type)
 
     def __init__(self, elements):
         super(Chain, self).__init__(self._flatten(elements))
@@ -473,12 +494,12 @@ class Chain(CompoundLink):
             self.chain_fork = self._chain_forks(elements)
             self.chain_join = elements[0].chain_join
 
-    @staticmethod
-    def _flatten(elements):
+    @classmethod
+    def _flatten(cls, elements):
         for element in elements:
             if not element:
                 continue
-            elif isinstance(element, Chain):
+            elif isinstance(element, Chain) and not element.chain_types.supersedes(cls.chain_types):
                 for sub_element in element.elements:
                     yield sub_element
             else:
@@ -494,6 +515,41 @@ class Chain(CompoundLink):
             elif element.chain_join:
                 return False
         return False
+
+    # extract-link for first element
+    # When linking to a chain, the chain as a single element shadows
+    # the link behaviour of the head/tail.
+    def __rshift__(self, child):
+        """
+        self >> child
+
+        :param child: following link to bind
+        :type child: ChainLink or iterable[ChainLink]
+        :returns: link between self and child
+        :rtype: ChainLink, FlatChain, Bundle or Chain
+        """
+        child = self.chain_types.convert(child)
+        if self and type(self.elements[-1]).__rshift__ not in (
+                self.chain_types.base_link_type.__rshift__, self.chain_types.base_chain_type.__rshift__
+        ):
+            return self._link(self[:-1], self.elements[-1] >> child)
+        return self._link(self, child)
+
+    def __lshift__(self, parent):
+        """
+        self << parents
+
+        :param parent: preceding link to bind
+        :type parent: ChainLink or iterable[ChainLink]
+        :returns: link between self and children
+        :rtype: ChainLink, FlatChain, Bundle or Chain
+        """
+        parent = self.chain_types.convert(parent)
+        if self and type(self.elements[0]).__lshift__ not in (
+                self.chain_types.base_link_type.__lshift__, self.chain_types.base_chain_type.__lshift__
+        ):
+            return self._link(self.elements[0] << parent, self[1:])
+        return self._link(parent, self)
 
     def chainlet_send(self, value=None):
         # traverse breadth first to allow for synchronized forking and joining
@@ -603,7 +659,8 @@ def bundle_sequences(element):
         return Bundle(element)
     return NotImplemented
 
-ChainTypes.add_converter(bundle_sequences)
-ChainTypes.chain_type = Chain
-ChainTypes.flat_chain_type = FlatChain
-ChainTypes.bundle_type = Bundle
+LinkPrimitives.add_converter(bundle_sequences)
+LinkPrimitives.base_link_type = ChainLink
+LinkPrimitives.base_chain_type = Chain
+LinkPrimitives.flat_chain_type = FlatChain
+LinkPrimitives.base_bundle_type = Bundle

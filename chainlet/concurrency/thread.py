@@ -1,3 +1,5 @@
+from __future__ import print_function
+import sys
 import threading
 
 from .. import chainlink
@@ -11,6 +13,31 @@ class ReturnThread(threading.Thread):
         super(ReturnThread, self).__init__(*iargs, **ikwargs)
         self._return_value = _THREAD_NOT_DONE
         self._exception_value = None
+
+    if sys.version_info[0] < 3:
+        @property
+        def _target(self):
+            return self._Thread__target
+
+        @_target.deleter
+        def _target(self):
+            del self._Thread__target
+
+        @property
+        def _args(self):
+            return self._Thread__args
+
+        @_args.deleter
+        def _args(self):
+            del self._Thread__args
+
+        @property
+        def _kwargs(self):
+            return self._Thread__kwargs
+
+        @_kwargs.deleter
+        def _kwargs(self):
+            del self._Thread__kwargs
 
     def run(self):
         try:
@@ -34,47 +61,8 @@ class ReturnThread(threading.Thread):
         return self._return_value
 
 
-class ThreadLinker(chainlink.ChainLinker):
-    """
-    Helper for linking individual :term:`chainlinks` to form compound :term:`chainlinks`
-
-    This Linker creates a direct implementation of the data flow.
-    It creates the longest :py:class:`~chainlink.Bundle` possible, maximising the number of concurrent branches.
-    """
-    def link(self, *elements):
-        elements = self.normalize(*elements)
-        elements = self.expand(*elements)
-        chain = self.bind_chain(*elements)
-        chain.chain_linker = self
-        return chain
-
-    def expand(self, *elements):
-        # We iterate in reverse through the elements, so
-        # later elements can be constructed once and then
-        # just cloned.
-        # This means our BUFFERS ARE REVERSED as well!
-        static = []  # elements which cannot be bound to a preceding bundle
-        buffer = []  # buffer of elements that have not been bound yet
-        for element in reversed(elements):
-            if element.chain_join:
-                print('join', element)
-                buffer.append(element)
-                static += buffer
-                buffer = []
-            elif isinstance(element, ThreadBundle):
-                print('bundle', element)
-                buffer.append(self.rebundle(element, list(reversed(buffer))))
-            elif element:
-                print('push', element)
-                buffer.append(element)
-        static += buffer
-        return list(reversed(static))
-
-    def rebundle(self, bundle, tail):
-        print('rebundle', bundle, tail)
-        return type(bundle)(
-            self.link(chain, *tail) for chain in bundle.elements
-        )
+class ThreadLinkPrimitives(chainlink.LinkPrimitives):
+    pass
 
 
 class ThreadBundle(chainlink.Bundle):
@@ -85,7 +73,25 @@ class ThreadBundle(chainlink.Bundle):
     blocking actions, such as file I/O or :py:func:`time.sleep`,
     to be run in parallel.
     """
-    chain_linker = ThreadLinker()
+    chain_types = ThreadLinkPrimitives()
+
+    def _link_child(self, child):
+        if child.chain_join:
+            return self._link(self, child)
+        return self.chain_types.base_bundle_type(
+            sub_chain >> child for sub_chain in self.elements
+        )
+
+    def __rshift__(self, child):
+        """
+        self >> child
+
+        :param child: following link to bind
+        :type child: ChainLink or iterable[ChainLink]
+        :returns: link between self and child
+        :rtype: ChainLink, FlatChain, Bundle or Chain
+        """
+        return self._link_child(self.chain_types.convert(child))
 
     def chainlet_send(self, value=None):
         result_threads = self._dispath_send(value)
@@ -130,6 +136,9 @@ class ThreadBundle(chainlink.Bundle):
         return results
 
 
+ThreadLinkPrimitives.base_bundle_type = ThreadBundle
+
+
 if __name__ == "__main__":
     # test/demonstration code
     import chainlet.dataflow
@@ -144,17 +153,18 @@ if __name__ == "__main__":
     try:
         count = int(sys.argv[1])
     except IndexError:
-        count = 10
+        count = 4
     try:
         duration = float(sys.argv[2])
     except IndexError:
         duration = 1.0 / count
     noop = chainlet.dataflow.NoOp()
-    chn = noop >> ThreadBundle([sleep(seconds=duration) for _ in range(count)]) >> noop
+    chn = noop >> ThreadBundle([sleep(seconds=duration) for _ in range(count)]) >> sleep(seconds=duration) >> noop
     print(chn)
     start_time = time.time()
     chn.send(start_time)
     end_time = time.time()
     delta = end_time - start_time
-    per_thread = (delta - duration) / count
-    print(delta, 'ideal=%.1f' % duration, 'reldev=%02d%%' % ((delta - duration) / duration * 100), 'pthread', per_thread)
+    ideal = duration * 2
+    per_thread = (delta - ideal) / count
+    print(delta, 'ideal=%.1f' % ideal, 'reldev=%02d%%' % ((delta - ideal) / ideal * 100), 'pthread', per_thread)

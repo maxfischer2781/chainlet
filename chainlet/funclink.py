@@ -34,6 +34,7 @@ applying a decorator:
 """
 from __future__ import division, absolute_import
 import functools
+import itertools
 
 import chainlet.wrapper
 from . import chainlink
@@ -72,6 +73,18 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     def chainlet_send(self, value=None):
         """Send a value to this element"""
         return self.__wrapped__(value=value)
+
+    def __wraplet_repr__(self):
+        return '<%s.%s(%s)>' % (
+            self.__module__,
+            self.__class__.__qualname__,
+            ', '.join(
+                itertools.chain(
+                    (repr(arg) for arg in self.__wrapped__.args),
+                    ('%s=%r' % (key, value) for key, value in self.__wrapped__.keywords.items())
+                )
+            )
+        )
 
 
 def funclet(function):
