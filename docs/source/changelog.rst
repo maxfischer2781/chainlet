@@ -7,8 +7,9 @@ v1.3.0
 
     **New Features**
 
-        * The ``>>`` and ``<<`` operators use reflection precedence to if the left-hand-side element's Linker
-          is a subclass of the right-hand-side Linker.
+        * The ``>>`` and ``<<`` operators use experimental reflection precedence based on domains.
+
+        * Added a ``threading`` based chain domain offering concurrent bundles.
 
     **Major Changes**
 
@@ -18,7 +19,7 @@ v1.3.0
 
     **Minor Changes**
 
-        * ``CompoundLink`` objects are now considered boolean ``False``.
+        * ``CompoundLink`` objects are now considered boolean ``False`` based on elements.
 
         * Added a neutral element for internal use.
 
