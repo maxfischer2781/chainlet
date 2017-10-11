@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
 
     chainlet.compat
+    chainlet.concurrency
 
 Submodules
 ----------
