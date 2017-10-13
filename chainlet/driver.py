@@ -80,6 +80,7 @@ class ThreadedChainDriver(ChainDriver):
             runner_threads = [
                 threading.Thread(target=self._mount_driver, args=(mount,)) for mount in self.mounts
             ]
+            self.mounts[:] = []
             for runner_thread in runner_threads:
                 runner_thread.daemon = self.daemon
                 runner_thread.start()
@@ -91,4 +92,4 @@ class ThreadedChainDriver(ChainDriver):
             while True:
                 next(mount)
         except StopIteration:
-            self.mounts.remove(mount)
+            pass
