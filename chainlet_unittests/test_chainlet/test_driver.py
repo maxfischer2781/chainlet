@@ -6,7 +6,7 @@ import time
 
 import chainlet.driver
 
-from chainlet_unittests.utility import Adder, Buffer, produce
+from chainlet_unittests.utility import Adder, Buffer, MultiprocessBuffer, produce
 
 
 class DriverMixin(object):
@@ -47,3 +47,8 @@ class TestChainDriver(DriverMixin, unittest.TestCase):
 
 class TestThreadedChainDriver(DriverMixin, unittest.TestCase):
     driver_class = chainlet.driver.ThreadedChainDriver
+
+
+class TestMultiprocessChainDriver(DriverMixin, unittest.TestCase):
+    driver_class = chainlet.driver.MultiprocessChainDriver
+    buffer_class = MultiprocessBuffer

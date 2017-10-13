@@ -1,5 +1,6 @@
 from __future__ import division, absolute_import
 import threading
+import multiprocessing
 
 
 class ChainDriver(object):
@@ -79,6 +80,41 @@ class ThreadedChainDriver(ChainDriver):
         with self._run_lock:
             runner_threads = [
                 threading.Thread(target=self._mount_driver, args=(mount,)) for mount in self.mounts
+            ]
+            self.mounts[:] = []
+            for runner_thread in runner_threads:
+                runner_thread.daemon = self.daemon
+                runner_thread.start()
+            for runner_thread in runner_threads:
+                runner_thread.join()
+
+    def _mount_driver(self, mount):
+        try:
+            while True:
+                next(mount)
+        except StopIteration:
+            pass
+
+
+class MultiprocessChainDriver(ChainDriver):
+    """
+    Actively drives chains by pulling them
+
+    This driver pulls all mounted chains via independent processes. This drives chains
+    concurrently, without blocking for any specific chain. Chains sharing elements
+    cannot exchange state between them.
+
+    :param daemon: run processes as ``daemon``, i.e. do not wait for them to finish
+    :type daemon: bool
+    """
+    def __init__(self, daemon=True):
+        super(MultiprocessChainDriver, self).__init__()
+        self.daemon = daemon
+
+    def run(self):
+        with self._run_lock:
+            runner_threads = [
+                multiprocessing.Process(target=self._mount_driver, args=(mount,)) for mount in self.mounts
             ]
             self.mounts[:] = []
             for runner_thread in runner_threads:

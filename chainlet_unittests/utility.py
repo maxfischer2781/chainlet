@@ -1,4 +1,8 @@
 from __future__ import absolute_import, division, print_function
+import os
+import multiprocessing
+import threading
+
 import chainlet
 import chainlet.dataflow
 import chainlet.chainlink
@@ -32,6 +36,37 @@ class Buffer(chainlet.ChainLink):
 
     def __repr__(self):
         return '<%s>' % self.buffer
+
+
+class MultiprocessBuffer(Buffer):
+    def __init__(self):
+        super(MultiprocessBuffer, self).__init__()
+        self._queue = multiprocessing.Queue()
+        self._close_signal = os.urandom(16)
+        self._pid = os.getpid()
+        receiver = threading.Thread(target=self._recv)
+        receiver.daemon = True
+        receiver.start()
+
+    def _recv(self):
+        _close_signal = self._close_signal
+        _queue = self._queue
+        buffer = self.buffer
+        del self
+        while True:
+            value = _queue.get()
+            if value == _close_signal:
+                break
+            buffer.append(value)
+        _queue.close()
+
+    def chainlet_send(self, value=None):
+        self._queue.put(value)
+        return value
+
+    def __del__(self):
+        self._queue.put(self._close_signal)
+        self._queue.close()
 
 
 @chainlet.genlet(prime=False)
