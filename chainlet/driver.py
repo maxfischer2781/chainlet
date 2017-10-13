@@ -61,7 +61,42 @@ class ChainDriver(object):
                         self.mounts.remove(mount)
 
 
-class ThreadedChainDriver(ChainDriver):
+class ConcurrentChainDriver(ChainDriver):
+    """
+    Actively drives chains by pulling them
+
+    This driver pulls all mounted chains via independent stacks. This drives chains
+    concurrently, without blocking for any specific chain. Chains sharing elements
+    may need to be synchronized explicitly.
+
+    :param daemon: run chains as ``daemon``, i.e. do not wait for them to exit when terminating
+    :type daemon: bool
+    """
+    def __init__(self, daemon=True):
+        super(ConcurrentChainDriver, self).__init__()
+        self.daemon = daemon
+
+    def create_runner(self, mount):
+        raise NotImplementedError
+
+    def run(self):
+        with self._run_lock:
+            chain_runners = [
+                (mount, self.create_runner(mount)) for mount in self.mounts
+            ]
+            for chain, runner in chain_runners:
+                runner.join()
+                self.mounts.remove(chain)
+
+    def _mount_driver(self, mount):
+        try:
+            while True:
+                next(mount)
+        except StopIteration:
+            pass
+
+
+class ThreadedChainDriver(ConcurrentChainDriver):
     """
     Actively drives chains by pulling them
 
@@ -76,27 +111,14 @@ class ThreadedChainDriver(ChainDriver):
         super(ThreadedChainDriver, self).__init__()
         self.daemon = daemon
 
-    def run(self):
-        with self._run_lock:
-            runner_threads = [
-                threading.Thread(target=self._mount_driver, args=(mount,)) for mount in self.mounts
-            ]
-            self.mounts[:] = []
-            for runner_thread in runner_threads:
-                runner_thread.daemon = self.daemon
-                runner_thread.start()
-            for runner_thread in runner_threads:
-                runner_thread.join()
-
-    def _mount_driver(self, mount):
-        try:
-            while True:
-                next(mount)
-        except StopIteration:
-            pass
+    def create_runner(self, mount):
+        runner = threading.Thread(target=self._mount_driver, args=(mount,))
+        runner.daemon = self.daemon
+        runner.start()
+        return runner
 
 
-class MultiprocessChainDriver(ChainDriver):
+class MultiprocessChainDriver(ConcurrentChainDriver):
     """
     Actively drives chains by pulling them
 
@@ -111,21 +133,8 @@ class MultiprocessChainDriver(ChainDriver):
         super(MultiprocessChainDriver, self).__init__()
         self.daemon = daemon
 
-    def run(self):
-        with self._run_lock:
-            runner_threads = [
-                multiprocessing.Process(target=self._mount_driver, args=(mount,)) for mount in self.mounts
-            ]
-            self.mounts[:] = []
-            for runner_thread in runner_threads:
-                runner_thread.daemon = self.daemon
-                runner_thread.start()
-            for runner_thread in runner_threads:
-                runner_thread.join()
-
-    def _mount_driver(self, mount):
-        try:
-            while True:
-                next(mount)
-        except StopIteration:
-            pass
+    def create_runner(self, mount):
+        runner = multiprocessing.Process(target=self._mount_driver, args=(mount,))
+        runner.daemon = self.daemon
+        runner.start()
+        return runner
