@@ -11,6 +11,8 @@ v1.3.0
 
         * Added a ``threading`` based chain domain offering concurrent bundles.
 
+        * Added a ``multiprocessing`` based ``Driver``.
+
     **Major Changes**
 
         * Deprecated the use of external linkers in favour of operator+constructor.
