@@ -37,6 +37,11 @@ def pickle_copy(obj, proto):
     return pickle.loads(dump)
 
 
+@chainlet.funclet
+def abcdefg(value, a=0, b=1, c=2, d=3, e=4, f=5, g=6):
+    return value, a, b, c, d, e, f, g
+
+
 class TestFunctionLink(unittest.TestCase):
     @staticmethod
     def _get_test_iterable():
@@ -73,6 +78,33 @@ class TestFunctionLink(unittest.TestCase):
                 self.assertEqual(chain.send(value), value)
                 self.assertIsNone(next(chain))
                 self.assertEqual(chain.send(value), value)
+
+    def test_arguments(self):
+        """FunctionLink: arguments as .. >> funclink(*args, **kwargs) >> ..."""
+        argument_count = 7
+        # default arguments
+        default_chain = NamedChainlet('start') >> abcdefg() >> NamedChainlet('stop')
+        for value in self._get_test_iterable():
+            result = list(default_chain.send(value))
+            self.assertEqual(result[0], value)
+            self.assertEqual(result[1:], list(range(argument_count)))
+        # positional arguments
+        for length in range(0, argument_count, 2):
+            positional_chain = NamedChainlet('start') >> abcdefg(*range(length, 0, -1)) >> NamedChainlet('stop')
+            for value in self._get_test_iterable():
+                result = list(positional_chain.send(value))
+                expect = list(range(length, 0, -1)) + list(range(length, argument_count))
+                self.assertEqual(result[0], value)
+                self.assertEqual(result[1:], expect)
+        # keyword arguments
+        for length in range(0, argument_count, 2):
+            kwargs = dict((chr(97 + idx), -idx) for idx in range(length))
+            positional_chain = NamedChainlet('start') >> abcdefg(**kwargs) >> NamedChainlet('stop')
+            for value in self._get_test_iterable():
+                result = list(positional_chain.send(value))
+                expect = list(range(0, -length, -1)) + list(range(length, argument_count))
+                self.assertEqual(result[0], value)
+                self.assertEqual(result[1:], expect)
 
     def test_pickle_copy(self):
         """FunctionLink: copy, deepcopy and pickle"""

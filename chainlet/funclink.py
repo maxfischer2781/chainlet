@@ -33,11 +33,44 @@ applying a decorator:
     producer >> stepper(20) >> consumer
 """
 from __future__ import division, absolute_import
-import functools
 import itertools
 
 import chainlet.wrapper
 from . import chainlink
+
+
+class PartialSlave(object):
+    __slots__ = ('func', 'args', 'keywords')
+
+    def __new__(cls, slave, *args, **keywords):
+        if not args and not keywords:
+            return slave
+        if hasattr(slave, 'func'):
+            args = slave.args + args
+            new_keywords = slave.keywords.copy()
+            new_keywords.update(keywords)
+            keywords = new_keywords
+            slave = slave.func
+        self = super(PartialSlave, cls).__new__(cls)
+        self.func = slave
+        self.args = args
+        self.keywords = keywords
+        return self
+
+    def __call__(self, value=None, *args, **kwargs):
+        new_args = self.args + args
+        new_kwargs = self.keywords.copy()
+        new_kwargs.update(kwargs)
+        return self.func(value, *new_args, **new_kwargs)
+
+    def __getnewargs__(self):
+        return self.func, self.args, self.keywords
+
+    def __getstate__(self):
+        return self.func, self.args, self.keywords
+
+    def __setstate__(self, state):
+        self.func, self.args, self.keywords = state
 
 
 class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
@@ -61,13 +94,13 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
     """
     def __init__(self, slave, *args, **kwargs):
         if args or kwargs:
-            slave = functools.partial(slave, *args, **kwargs)
+            slave = PartialSlave(slave, *args, **kwargs)
         super(FunctionLink, self).__init__(slave=slave)
 
     @staticmethod
     def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
         if slave_args or slave_kwargs:
-            return functools.partial(raw_slave, *slave_args, **slave_kwargs)
+            return PartialSlave(raw_slave, *slave_args, **slave_kwargs)
         return raw_slave
 
     def chainlet_send(self, value=None):
