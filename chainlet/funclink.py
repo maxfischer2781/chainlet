@@ -130,5 +130,10 @@ def funclet(function):
         def square(value):
             "Convert every data chunk to its numerical square"
             return value ** 2
+
+    The :term:`data chunk` ``value`` is passed anonymously as the first positional parameter.
+    In other words, the wrapped function should have the signature:
+
+    .. py:function:: .slave(value, *args, **kwargs)
     """
     return FunctionLink.wraplet()(function)
