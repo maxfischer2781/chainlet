@@ -103,7 +103,7 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
 
     def chainlet_send(self, value=None):
         """Send a value to this element"""
-        return self.__wrapped__(value=value)
+        return self.__wrapped__(value)
 
     def __wraplet_repr__(self):
         return '<%s.%s(%s)>' % (
