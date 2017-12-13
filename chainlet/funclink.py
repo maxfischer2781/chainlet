@@ -43,8 +43,6 @@ class PartialSlave(object):
     __slots__ = ('func', 'args', 'keywords')
 
     def __new__(cls, slave, *args, **keywords):
-        if not args and not keywords:
-            return slave
         if hasattr(slave, 'func'):
             args = slave.args + args
             new_keywords = slave.keywords.copy()
