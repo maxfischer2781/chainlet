@@ -183,8 +183,8 @@ class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
             next(self.__wrapped__)
 
     @staticmethod
-    def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
-        return StashedGenerator(raw_slave, *slave_args, **slave_kwargs)
+    def __init_slave__(slave_factory, *slave_args, **slave_kwargs):
+        return StashedGenerator(slave_factory, *slave_args, **slave_kwargs)
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""

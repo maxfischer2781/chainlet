@@ -96,10 +96,10 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
         super(FunctionLink, self).__init__(slave=slave)
 
     @staticmethod
-    def __init_slave__(raw_slave, *slave_args, **slave_kwargs):
+    def __init_slave__(slave_factory, *slave_args, **slave_kwargs):
         if slave_args or slave_kwargs:
-            return PartialSlave(raw_slave, *slave_args, **slave_kwargs)
-        return raw_slave
+            return PartialSlave(slave_factory, *slave_args, **slave_kwargs)
+        return slave_factory
 
     def chainlet_send(self, value=None):
         """Send a value to this element"""
