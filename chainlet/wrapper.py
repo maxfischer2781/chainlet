@@ -26,16 +26,19 @@ class WrapperMixin(object):
 
     .. code:: python
 
-        class MyWrap(WrapperMixin, ChainLink):
+        class SimpleWrapper(WrapperMixin, ChainLink):
+            /"/"/"Chainlink that calls ``slave`` for each chunk/"/"/"
             def __init__(self, slave):
                 super().__init__(slave=slave)
 
-            def send(self, value):
+            def chainlet_send(self, value):
                 value = self.__wrapped__.send(value)
-                super().send(value)
 
     Wrappers bind their slave to ``__wrapped__``, as is the Python standard,
     and also expose them via the ``slave`` property for convenience.
+
+    Additionally, subclasses provide the :py:meth:`~.wraplet` to create factories of wrappers.
+    This requires :py:meth:`~.__init_slave__` to be defined.
     """
     def __init__(self, slave):
         super(WrapperMixin, self).__init__()
@@ -58,6 +61,8 @@ class WrapperMixin(object):
             id(self)
         )
 
+    # wraplet specific special methods
+    # repr for wraplet instances
     def __wraplet_repr__(self):
         return '<%s.%s wraplet at %x>' % (
             self.__module__,
@@ -66,10 +71,27 @@ class WrapperMixin(object):
         )
 
     def __init_slave__(self, slave_factory, *slave_args, **slave_kwargs):
+        """Create a slave from ``slave_factory``"""
         raise NotImplementedError
 
     @classmethod
     def wraplet(cls, *cls_args, **cls_kwargs):
+        """
+        Create a factory to produce a Wrapper from a slave factory
+
+        :param cls_args: positional arguments to provide to the Wrapper class
+        :param cls_kwargs: keyword arguments to provide to the Wrapper class
+        :return:
+
+        .. code:: python
+
+            cls_wrapper_factory = cls.wraplet(*cls_args, **cls_kwargs)
+            link_factory = cls_wrapper_factory(slave_factory)
+            slave_link = link_factory(*slave_args, **slave_kwargs)
+        """
+        if cls.__init_slave__ in (None, WrapperMixin.__init_slave__):
+            raise TypeError('type %r does not implement the wraplet protocol' % getname(cls))
+
         def wrapper_factory(slave_factory):
             """Factory to create a new class by wrapping ``slave_factory``"""
             class Wraplet(cls):  # pylint:disable=abstract-method
