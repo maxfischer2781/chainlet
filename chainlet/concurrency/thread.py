@@ -15,10 +15,18 @@ from .base import StoredFuture, canonical_send, CPU_CONCURRENCY
 
 
 class ThreadPoolExecutor(object):
+    """
+    Executor for futures using a pool of threads
+
+    :param max_workers: maximum number of threads in pool
+    :type max_workers: int or float
+    :param identifier: base identifier for all workers
+    :type identifier: str
+    """
     _min_workers = max(CPU_CONCURRENCY, 2)
 
     def __init__(self, max_workers, identifier=''):
-        self._max_workers = max_workers
+        self._max_workers = max_workers if max_workers > 0 else float('inf')
         self._workers = set()
         self._identifier = identifier or ('%s_%d' % (self.__class__.__name__, id(self)))
         self._queue = queue.Queue()
@@ -26,6 +34,8 @@ class ThreadPoolExecutor(object):
         atexit.register(self._teardown)
 
     def _teardown(self):
+        # prevent starting new workers
+        self._min_workers, self._max_workers = 0, 0
         while True:
             try:
                 self._queue.get(block=False)
@@ -37,12 +47,18 @@ class ThreadPoolExecutor(object):
             worker.join()
 
     def submit(self, call, *args, **kwargs):
+        """
+        Submit a call for future execution
+
+        :return: future for the call execution
+        :rtype: StoredFuture
+        """
         future = StoredFuture(call, *args, **kwargs)
         self._queue.put(future)
         self._ensure_worker()
         return future
 
-    def execute_futures(self):
+    def _execute_futures(self):
         while True:
             # try and get work
             try:
@@ -67,9 +83,10 @@ class ThreadPoolExecutor(object):
         return True
 
     def _ensure_worker(self):
+        """Ensure there are enougn workers available"""
         while len(self._workers) < self._min_workers or len(self._workers) < self._queue.qsize() < self._max_workers:
             worker = threading.Thread(
-                target=self.execute_futures,
+                target=self._execute_futures,
                 name=self._identifier + '_%d' % time.time(),
             )
             worker.daemon = True
