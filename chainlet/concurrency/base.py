@@ -4,6 +4,13 @@ from .. import chainlink
 
 
 class StoredFuture(object):
+    """
+    Call stored for future execution
+
+    :param call: callable to execute
+    :param args: positional arguments to ``call``
+    :param kwargs: keyword arguments to ``call``
+    """
     __slots__ = ('_instruction', '_result', '_mutex')
 
     def __init__(self, call, *args, **kwargs):
@@ -16,8 +23,10 @@ class StoredFuture(object):
         Realise the future if possible
 
         If the future has not been realised yet, do so in the current thread.
-        This will block the stack until the future is realised.
+        This will block execution until the future is realised.
         Otherwise, do not block but return whether the result is already available.
+
+        This will not return the result nor propagate any exceptions of the future itself.
 
         :return: whether the future has been realised
         :rtype: bool
@@ -50,7 +59,15 @@ class StoredFuture(object):
                 pass
 
     @property
-    def results(self):
+    def result(self):
+        """
+        The result from realising the future
+
+        If the result is not available, block until done.
+
+        :return: result of the future
+        :raises: any exception encountered during realising the future
+        """
         if self._result is None:
             self.await_result()
         chunks, exception = self._result
@@ -61,6 +78,9 @@ class StoredFuture(object):
 
 # canonical send
 # TODO: move to core as canonical_send(self, chunks)
+# NOTE: we *cannot* be lazy with generators here, but must
+#       use lists to force evaluation. Otherwise, we simply
+#       create, not evaluate, generators concurrently.
 
 def canonical_send(chainlet, chunks):
     """

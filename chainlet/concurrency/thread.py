@@ -124,7 +124,7 @@ class AsyncChainResults(object):
                     except StopIteration:
                         break
                     try:
-                        results = future.results
+                        results = future.result
                     except Exception as err:
                         self._exception = err
                         break
