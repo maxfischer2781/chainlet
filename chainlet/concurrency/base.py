@@ -80,7 +80,7 @@ class StoredFuture(object):
         raise exception  # re-raise exception from execution
 
 
-class AsyncChainResults(object):
+class FutureChainResults(object):
     def __init__(self, futures):
         self._futures = iter(futures)
         self._results = []

@@ -11,7 +11,7 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, canonical_send, CPU_CONCURRENCY, AsyncChainResults
+from .base import StoredFuture, canonical_send, CPU_CONCURRENCY, FutureChainResults
 
 
 class ThreadPoolExecutor(object):
@@ -131,7 +131,7 @@ class ThreadBundle(chainlink.Bundle):
         return self._link_child(self.chain_types.convert(child))
 
     def chainlet_send(self, value=None):
-        return AsyncChainResults([
+        return FutureChainResults([
             self.executor.submit(canonical_send, element, [value])
             for element in self.elements
         ])
