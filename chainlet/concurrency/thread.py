@@ -178,42 +178,6 @@ class ThreadBundle(chainlink.Bundle):
             for element in self.elements
         ])
 
-    def _dispath_send(self, value):
-        result_threads = []
-        for element in self.elements:
-            result_threads.append((
-                element.chain_join,
-                element.chain_fork,
-                ThreadedCall(element.chainlet_send, value)
-            ))
-        return result_threads
-
-    def _collect_send(self, result_threads):
-        results = []
-        elements_exhausted = 0
-        for chain_join, chain_fork, send_thread in result_threads:
-            if chain_fork:
-                try:
-                    results.extend(send_thread.return_value)
-                except StopIteration:
-                    elements_exhausted += 1
-            else:
-                # this is a bit of a judgement call - MF@20170329
-                # either we
-                # - catch StopTraversal and return, but that means further elements will still get it
-                # - we suppress StopTraversal, denying any return_value
-                # - we return the Exception, which means later elements must check/filter it
-                try:
-                    results.append(send_thread.return_value)
-                except chainlink.StopTraversal as err:
-                    if err.return_value is not chainlink.END_OF_CHAIN:
-                        results.append(err.return_value)
-                except StopIteration:
-                    elements_exhausted += 1
-        if elements_exhausted == len(self.elements):
-            raise StopIteration
-        return results
-
 
 ThreadLinkPrimitives.base_bundle_type = ThreadBundle
 
