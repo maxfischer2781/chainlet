@@ -31,15 +31,16 @@ class ThreadPoolExecutor(object):
         self._identifier = identifier or ('%s_%d' % (self.__class__.__name__, id(self)))
         self._queue = queue.Queue()
         self._ensure_worker()
-        atexit.register(self._teardown)
+        # need to pass in queue.Empty as queue module may be collected on shutdown
+        atexit.register(self._teardown, queue.Empty)
 
-    def _teardown(self):
+    def _teardown(self, queue_empty):
         # prevent starting new workers
         self._min_workers, self._max_workers = 0, 0
         while True:
             try:
                 self._queue.get(block=False)
-            except queue.Empty:
+            except queue_empty:
                 break
         for worker in range(len(self._workers)):
             self._queue.put(None)
