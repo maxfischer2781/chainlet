@@ -11,7 +11,7 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, canonical_send, CPU_CONCURRENCY
+from .base import StoredFuture, canonical_send, CPU_CONCURRENCY, AsyncChainResults
 
 
 class ThreadPoolExecutor(object):
@@ -95,64 +95,6 @@ class ThreadPoolExecutor(object):
 
 
 DEFAULT_EXECUTOR = ThreadPoolExecutor(CPU_CONCURRENCY * 5, 'chainlet_thread')
-
-
-class AsyncChainResults(object):
-    def __init__(self, futures):
-        self._futures = iter(futures)
-        self._results = []
-        self._exception = None
-        self._done = False
-        self._result_lock = threading.Lock()
-
-    def _set_done(self):
-        if not self._done:
-            self._done = True
-            self._futures = None
-            self._result_lock = None
-
-    def __iter__(self):
-        if self._done:
-            for item in self._results:
-                yield item
-        else:
-            for item in self._active_iter():
-                yield item
-        if self._exception is not None:
-            raise self._exception
-
-    def _active_iter(self):
-        result_idx = 0
-        # fast-forward existing results
-        for item in self._results:
-            yield item
-            result_idx += 1
-        # fetch remaining results safely
-        while self._futures and not self._exception:
-            # someone may have beaten us before we acquire this lock
-            # constraints must be rechecked as needed
-            with self._result_lock:
-                try:
-                    result = self._results[result_idx]
-                except IndexError:
-                    try:
-                        future = next(self._futures)
-                    except StopIteration:
-                        break
-                    try:
-                        results = future.result
-                    except Exception as err:
-                        self._exception = err
-                        break
-                    else:
-                        self._results.extend(results)
-                        for item in results:
-                            yield item
-                            result_idx += 1
-                else:
-                    yield result
-                    result_idx += 1
-        self._done = True
 
 
 class ThreadLinkPrimitives(chainlink.LinkPrimitives):
