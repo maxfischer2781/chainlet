@@ -81,6 +81,20 @@ class StoredFuture(object):
 
 
 class FutureChainResults(object):
+    """
+    Chain result computation stored for future and concurrent execution
+
+    Acts as an iterable for the actual results. Each future can be executed
+    prematurely by a concurrent executor, with a synchronous fallback as
+    required. Iteration can lazily advance through all available results
+    before blocking.
+
+    If any future raises an exception, iteration re-raises the exception
+    at the appropriate position.
+
+    :param futures: the stored futures for each result chunk
+    :type futures: list[StoredFuture]
+    """
     def __init__(self, futures):
         self._futures = iter(futures)
         self._results = []
@@ -111,7 +125,7 @@ class FutureChainResults(object):
             yield item
             result_idx += 1
         # fetch remaining results safely
-        while self._futures and not self._exception:
+        while not self._done:
             # someone may have beaten us before we acquire this lock
             # constraints must be rechecked as needed
             with self._result_lock:
