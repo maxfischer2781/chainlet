@@ -9,6 +9,8 @@ v1.3.0
 
         * The ``>>`` and ``<<`` operators use experimental reflection precedence based on domains.
 
+        * Added a future based ``concurrency`` module.
+
         * Added a ``threading`` based chain domain offering concurrent bundles.
 
         * Added a ``multiprocessing`` based ``Driver``.

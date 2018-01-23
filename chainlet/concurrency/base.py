@@ -35,7 +35,7 @@ class StoredFuture(object):
         :return: whether the future has been realised
         :rtype: bool
         """
-        if self._mutex.acquire(blocking=False):
+        if self._mutex.acquire(False):
             # realise the future in this thread
             try:
                 if self._result is not None:
