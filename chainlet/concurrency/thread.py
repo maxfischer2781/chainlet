@@ -221,11 +221,12 @@ ThreadLinkPrimitives.base_bundle_type = ThreadBundle
 if __name__ == "__main__":
     # test/demonstration code
     import chainlet.dataflow
-    import time
+    import chainlet._debug
     import sys
 
     @chainlet.funclet
-    def sleep(value, seconds):
+    def sleep(value, seconds, identifier='<anon>'):
+        print(threading.get_ident(), 'sleep', seconds, '@', identifier, value)
         time.sleep(seconds)
         return value
 
@@ -237,8 +238,10 @@ if __name__ == "__main__":
         duration = float(sys.argv[2])
     except IndexError:
         duration = 1.0 / count
+    print('Chain [%d/%d] >> 1/%d' % (count, count, count))
+    print('Main', threading.get_ident())
     noop = chainlet.dataflow.NoOp()
-    chn = noop >> ThreadBundle([sleep(seconds=duration) for _ in range(count)]) >> sleep(seconds=duration) >> noop
+    chn = noop >> ThreadBundle([sleep(seconds=duration, identifier=_) for _ in range(count)]) >> sleep(seconds=duration) >> noop
     print(chn)
     start_time = time.time()
     chn.send(start_time)
@@ -246,4 +249,4 @@ if __name__ == "__main__":
     delta = end_time - start_time
     ideal = duration * 2
     per_thread = (delta - ideal) / count
-    print(delta, 'ideal=%.1f' % ideal, 'reldev=%02d%%' % ((delta - ideal) / ideal * 100), 'pthread', per_thread)
+    print('total=%.2f' % delta, 'ideal=%.2f' % ideal, 'reldev=%02d%%' % ((delta - ideal) / ideal * 100), 'perthread', per_thread)
