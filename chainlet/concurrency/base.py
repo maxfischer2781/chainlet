@@ -1,6 +1,10 @@
 import threading
+import multiprocessing
 
 from .. import chainlink
+
+
+CPU_CONCURRENCY = multiprocessing.cpu_count()
 
 
 class StoredFuture(object):

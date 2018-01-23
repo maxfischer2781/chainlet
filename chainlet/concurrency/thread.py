@@ -3,7 +3,6 @@ Thread based concurrency domain
 """
 from __future__ import print_function
 import threading
-import os
 import time
 import atexit
 try:
@@ -12,11 +11,11 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, canonical_send
+from .base import StoredFuture, canonical_send, CPU_CONCURRENCY
 
 
 class ThreadPoolExecutor(object):
-    _min_workers = max(os.cpu_count(), 2)
+    _min_workers = max(CPU_CONCURRENCY, 2)
 
     def __init__(self, max_workers, identifier=''):
         self._max_workers = max_workers
@@ -78,7 +77,7 @@ class ThreadPoolExecutor(object):
             worker.start()
 
 
-DEFAULT_EXECUTOR = ThreadPoolExecutor(os.cpu_count() * 5, 'chainlet_thread')
+DEFAULT_EXECUTOR = ThreadPoolExecutor(CPU_CONCURRENCY * 5, 'chainlet_thread')
 
 
 class AsyncChainResults(object):
