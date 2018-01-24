@@ -3,7 +3,7 @@ import unittest
 
 from chainlet.dataflow import MergeLink
 
-from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery, ReturnEvery
+from chainlet_unittests.utility import Adder, produce, abort_swallow, AbortEvery, ReturnEvery
 
 
 class ChainIteration(unittest.TestCase):
@@ -53,11 +53,6 @@ class ChainIteration(unittest.TestCase):
         with self.subTest(case='plain'):
             self._test_iter_one(chain_factory, expected)
 
-        with self.subTest(case='abort_return'):
-            def factory_return():
-                return chain_factory() >> abort_return()
-            self._test_iter_one(factory_return, expected)
-
         with self.subTest(case='abort_swallow'):
             def factory_swallow():
                 return chain_factory() >> abort_swallow()
@@ -94,7 +89,7 @@ class ChainIteration(unittest.TestCase):
         chain_enumerate = chain_factory()
         for idx, elem in enumerate(chain_enumerate):
             self.assertEqual(elem, expected[idx])
-        chain_next = chain_factory()
+        chain_next = iter(chain_factory())
         expect_next = iter(expected)
         for _ in range(len(expected)):
             self.assertEqual(next(chain_next), next(expect_next))

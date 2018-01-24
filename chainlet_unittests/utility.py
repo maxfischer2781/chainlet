@@ -77,12 +77,6 @@ def produce(iterable):
 
 
 @chainlet.funclet
-def abort_return(value):
-    """Always return input by aborting the chain"""
-    raise chainlet.chainlink.StopTraversal(value)
-
-
-@chainlet.funclet
 def abort_swallow(value):
     """Always abort the chain without returning"""
     raise chainlet.chainlink.StopTraversal
@@ -122,4 +116,4 @@ class ReturnEvery(chainlet.ChainLink):
             self._count += 1
             raise chainlet.chainlink.StopTraversal
         self._count += 1
-        raise chainlet.chainlink.StopTraversal(value)
+        return value
