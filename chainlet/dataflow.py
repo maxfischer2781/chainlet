@@ -195,6 +195,10 @@ class Either(chainlink.ChainLink):
     def __init__(self, *choices, **kwargs):
         self.choices = tuple(choices)
         self.default = kwargs.pop('default', self.NO_DEFAULT)
+        if len(set((choice.chain_fork, choice.chain_join) for choice in self.choices)) != 1:
+            raise ValueError('all choices must have consistent fork/join behaviour')
+        self.chain_fork = self.choices[0].chain_fork
+        self.chain_join = self.choices[0].chain_join
 
     def chainlet_send(self, value=None):
         for choice in self.choices:
