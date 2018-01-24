@@ -17,6 +17,11 @@ v1.3.0
 
     **Major Changes**
 
+        * Due to inconsistent semantics, stopping a chain with ``StopTraversal`` no longer allows for a return value.
+          Aligned ``chainlet.send`` to ``generator.send``,
+          returning ``None`` or an empty iterable instead of blocking indefinitely.
+          See `issue #8 <https://github.com/maxfischer2781/chainlet/issues/8>`_ for details.
+
         * Deprecated the use of external linkers in favour of operator+constructor.
 
         * Linking to chains ignores elements which are ``False`` in a boolean sense, e.g. an empty ``CompoundLink``.

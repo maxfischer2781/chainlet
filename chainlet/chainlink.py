@@ -14,12 +14,8 @@ class StopTraversal(Exception):
     """
     Stop the traversal of a chain
 
-    :param return_value: the value returned by the chain
-
     Any chain element raising :py:exc:`~.StopTraversal` signals that
-    subsequent elements of the chain should not be visited. If
-    ``return_value`` is set, it becomes the final return value of the chain.
-    Otherwise, no return value is provided.
+    subsequent elements of the chain should not be visited with the current value.
 
     Raising :py:exc:`~.StopTraversal` does *not* mean the element is exhausted.
     It may still produce values regularly on future traversal.
@@ -27,10 +23,12 @@ class StopTraversal(Exception):
 
     :note: This signal explicitly affects the current chain only. It does not
            affect other, parallel chains of a graph.
+
+    .. versionchanged:: 1.3
+       The ``return_value`` parameter was removed.
     """
-    def __init__(self, return_value=END_OF_CHAIN):
+    def __init__(self):
         Exception.__init__(self)
-        self.return_value = return_value
 
 
 class _ElementExhausted(Exception):
@@ -137,15 +135,24 @@ class ChainLink(object):
     Aside from binding, every :py:class:`ChainLink` implements the
     `Generator-Iterator Methods`_ interface:
 
+    .. method:: iter(link)
+
+       Create an iterator over all data chunks that can be created.
+       Empty results are ignored.
+
     .. method:: link.__next__()
                 link.send(None)
+                next(link)
 
        Create a new chunk of data. Raise :py:exc:`StopIteration` if there are
-       no more chunks. Implicitly used in ``next(link)`` and ``for chunk in link``.
+       no more chunks. Implicitly used by ``next(link)``.
 
     .. method:: link.send(chunk)
 
        Process a data ``chunk``, and return the result.
+
+    .. note:: The ``next`` variants contrast with ``iter`` by also returning empty chunks.
+              Use variations of ``next(iter(link))`` for an explicit iteration.
 
     .. method:: link.chainlet_send(chunk)
 
@@ -250,9 +257,8 @@ class ChainLink(object):
         while True:
             try:
                 yield self.chainlet_send(None)
-            except StopTraversal as err:
-                if err.return_value is not END_OF_CHAIN:
-                    yield err.return_value
+            except StopTraversal:
+                continue
             except StopIteration:
                 break
 
@@ -279,30 +285,13 @@ class ChainLink(object):
         return self._send_flat(value)
 
     def _send_flat(self, value=None):
-        # we do one explicit loop to keep overhead low...
         try:
             return self.chainlet_send(value)
-        except StopTraversal as err:
-            if err.return_value is not END_OF_CHAIN:
-                return err.return_value
-            # ...then do the correct loop if needed
-            while True:
-                try:
-                    return self.chainlet_send(value)
-                except StopTraversal as err:
-                    if err.return_value is not END_OF_CHAIN:
-                        return err.return_value
+        except StopTraversal:
+            return None
 
     def _send_fork(self, value=None):
-        # we do one explicit loop to keep overhead low...
-        result = list(self.chainlet_send(value))
-        if result:
-            return result
-        # ...then do the correct loop if needed
-        while True:
-            result = list(self.chainlet_send(value))
-            if result:
-                return result
+        return list(self.chainlet_send(value))
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
@@ -436,9 +425,8 @@ class Bundle(CompoundLink):
                 # - we return the Exception, which means later elements must check/filter it
                 try:
                     results.append(element.chainlet_send(value))
-                except StopTraversal as err:
-                    if err.return_value is not END_OF_CHAIN:
-                        results.append(err.return_value)
+                except StopTraversal:
+                    continue
                 except StopIteration:
                     elements_exhausted += 1
         if elements_exhausted == len(self.elements):
@@ -599,10 +587,8 @@ class Chain(CompoundLink):
             try:
                 for return_value in element.chainlet_send(value):
                     yield return_value
-            except StopTraversal as err:
-                if err.return_value is not END_OF_CHAIN:
-                    for return_value in err.return_value:
-                        yield return_value
+            except StopTraversal:
+                continue
             except StopIteration:
                 raise _ElementExhausted
 
@@ -612,9 +598,7 @@ class Chain(CompoundLink):
         # iterator goes in, values comes out
         try:
             return [element.chainlet_send(values)]
-        except StopTraversal as err:
-            if err.return_value is not END_OF_CHAIN:
-                return [err.return_value]
+        except StopTraversal:
             return []
 
     @staticmethod
@@ -624,9 +608,8 @@ class Chain(CompoundLink):
         for value in values:
             try:
                 yield element.chainlet_send(value)
-            except StopTraversal as err:
-                if err.return_value is not END_OF_CHAIN:
-                    yield err.return_value
+            except StopTraversal:
+                continue
             except StopIteration:
                 raise _ElementExhausted
 
