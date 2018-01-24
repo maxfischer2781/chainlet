@@ -149,7 +149,7 @@ class FutureChainResults(object):
                 else:
                     yield result
                     result_idx += 1
-        self._done = True
+        self._set_done()
 
 
 # canonical send
