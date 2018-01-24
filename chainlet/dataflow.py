@@ -177,6 +177,7 @@ class MergeLink(chainlink.ChainLink):
                 return merger
         raise ValueError('No compatible merger for %s' % value_type)
 
+# add Count support for newer versions
 try:
     Counter = collections.Counter
 except AttributeError:
