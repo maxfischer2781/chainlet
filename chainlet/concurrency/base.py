@@ -194,10 +194,8 @@ def _send_1_to_m(element, values):
         try:
             for return_value in element.chainlet_send(value):
                 results.append(return_value)
-        except chainlink.StopTraversal as err:
-            if err.return_value is not chainlink.END_OF_CHAIN:
-                for return_value in err.return_value:
-                    results.append(return_value)
+        except chainlink.StopTraversal:
+            continue
         except StopIteration:
             break
     return results
@@ -207,9 +205,7 @@ def _send_n_to_1(element, values):
     # pack input after joining chunks
     try:
         return [element.chainlet_send(values)]
-    except chainlink.StopTraversal as err:
-        if err.return_value is not chainlink.END_OF_CHAIN:
-            return [err.return_value]
+    except chainlink.StopTraversal:
         return []
 
 
@@ -220,9 +216,8 @@ def _send_1_to_1(element, values):
     for value in values:
         try:
             results.append(element.chainlet_send(value))
-        except chainlink.StopTraversal as err:
-            if err.return_value is not chainlink.END_OF_CHAIN:
-                results.append(err.return_value)
+        except chainlink.StopTraversal:
+            continue
         except StopIteration:
             break
     return results
