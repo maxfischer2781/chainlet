@@ -7,6 +7,9 @@ import collections
 import numbers
 
 from . import chainlink
+from . import utility
+
+__all__ = ['NoOp', 'joinlet', 'forklet', 'MergeLink', 'either']
 
 
 class NoOp(chainlink.NeutralLink):
@@ -184,3 +187,28 @@ except AttributeError:
     pass
 else:
     MergeLink.default_merger.insert(1, (Counter, merge_numerical))
+
+
+class Either(chainlink.ChainLink):
+    NO_DEFAULT = utility.Sentinel('NO DEFAULT')
+
+    def __init__(self, *choices, **kwargs):
+        self.choices = tuple(choices)
+        self.default = kwargs.pop('default', self.NO_DEFAULT)
+
+    def chainlet_send(self, value=None):
+        for choice in self.choices:
+            try:
+                return choice.chainlet_send(value)
+            except chainlink.StopTraversal:
+                continue
+        if self.default is not self.NO_DEFAULT:
+            return self.default
+        raise chainlink.StopTraversal
+
+    def __repr__(self):
+        if self.default:
+            return 'either(%s, default=%r)' % (', '.join(repr(choice) for choice in self.choices), self.default)
+        return 'either(%s)' % ', '.join(repr(choice) for choice in self.choices)
+
+either = Either
