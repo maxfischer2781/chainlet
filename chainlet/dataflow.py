@@ -190,6 +190,32 @@ else:
 
 
 class Either(chainlink.ChainLink):
+    """
+    Select the first successful chain from a number of choices
+
+    :param choices: chains to choose from
+    :type choices: iterable[chainlink.ChainLink]
+    :param default: default value to provide if no chain produces a result
+
+    For every :term:`data chunk`, the first chain from ``choices`` to
+    produce a result is chosen. Success is determined by not raising
+    :py:exc:`~chainlink.StopTraversal`; there is no special casing of
+    ``[]`` or :py:const:`None`.
+
+    A simple switch statement can be implemented as
+
+    .. code:: python
+
+        either(
+            condition_a >> instruction_a,
+            condition_b >> instruction_b,
+            condition_c >> instruction_c,
+            ...
+        )
+
+    .. note:: All ``choices`` must have the same behaviour with respect
+              to :term:`forking` and :term:`joining`.
+    """
     NO_DEFAULT = utility.Sentinel('NO DEFAULT')
 
     def __init__(self, *choices, **kwargs):
