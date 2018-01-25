@@ -103,10 +103,9 @@ class FutureChainResults(object):
         self._result_lock = threading.Lock()
 
     def _set_done(self):
-        if not self._done:
-            self._done = True
-            self._futures = None
-            self._result_lock = None
+        self._done = True
+        self._futures = None
+        self._result_lock = None
 
     def __iter__(self):
         if self._done:
@@ -149,6 +148,8 @@ class FutureChainResults(object):
                 else:
                     yield result
                     result_idx += 1
+        for item in self._results[result_idx:]:
+            yield item
         self._set_done()
 
 
