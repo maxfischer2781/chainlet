@@ -5,7 +5,7 @@ import time
 import chainlet
 import chainlet.dataflow
 
-from chainlet_unittests.utility import Adder, produce
+from chainlet_unittests.utility import Adder
 
 
 @chainlet.funclet
