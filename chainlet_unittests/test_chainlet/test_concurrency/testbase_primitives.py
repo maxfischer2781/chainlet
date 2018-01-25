@@ -48,12 +48,13 @@ class PrimitiveTestCases(object):
                     self.assertEqual(reference_chain.send(initial), concurrent_chain.send(initial))
 
         def test_repacking(self):
-            """chained bundles as `a >> (b, c) >> (d, e) >> ..."""
+            """chained bundles as `a >> (b, c, d) >> (e, f, g) >> ..."""
             primitives = [Adder(val) for val in (0, -2, -1E6)]
             for elements in itertools.product(primitives, repeat=6):
                 a, b, c, d, e, f = elements
-                reference_chain = a >> (b, c) >> (d, e) >> f
-                concurrent_chain = a >> self.bundle_type((b, c)) >> self.bundle_type((d, e)) >> f
+                reference_chain = a >> (b, c, d) >> (c, d, e) >> f
+                concurrent_chain = a >> self.bundle_type((b, c, d)) >> self.bundle_type((c, d, e)) >> f
                 for initial in (0, -12, 124, -12234, +1E6):
-                    ref = reference_chain.send(initial)
-                    self.assertEqual(ref, concurrent_chain.send(initial))
+                    sequential = reference_chain.send(initial)
+                    concurrent = concurrent_chain.send(initial)
+                    self.assertEqual(sequential, concurrent)
