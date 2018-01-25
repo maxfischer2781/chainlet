@@ -14,6 +14,13 @@ def sleep(value, seconds):
     return value
 
 
+@chainlet.joinlet
+@chainlet.forklet
+@chainlet.funclet
+def restripe(value):
+    return (val for val in value)
+
+
 class PrimitiveTestCases(object):
     class ConcurrentBundle(unittest.TestCase):
         bundle_type = chainlet.chainlink.Bundle
@@ -56,7 +63,11 @@ class PrimitiveTestCases(object):
                 reference_chain = a >> (b, c, d) >> (c, d, e) >> f
                 concurrent_chain = a >> self.bundle_type(
                     (sleep(seconds=delay) >> b, sleep(seconds=delay) >> c, sleep(seconds=delay) >> d)) >> self.bundle_type(
-                    (sleep(seconds=delay) >> c, sleep(seconds=delay) >> d, sleep(seconds=delay) >> e)) >> f
+                    (
+                        restripe() >> sleep(seconds=delay) >> c,
+                        restripe() >> sleep(seconds=delay) >> d,
+                        restripe() >> sleep(seconds=delay) >> e)
+                ) >> f
                 for initial in (0, -12, 124, -12234, +1E6):
                     sequential = reference_chain.send(initial)
                     concurrent = concurrent_chain.send(initial)
