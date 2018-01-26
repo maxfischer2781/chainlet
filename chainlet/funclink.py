@@ -106,16 +106,18 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
         return self.__wrapped__(value)
 
     def __wraplet_repr__(self):
-        return '<%s.%s(%s)>' % (
-            self.__module__,
-            self.__class__.__qualname__,
-            ', '.join(
-                itertools.chain(
-                    (repr(arg) for arg in self.__wrapped__.args),
-                    ('%s=%r' % (key, value) for key, value in self.__wrapped__.keywords.items())
+        if hasattr(self.__wrapped__, 'args'):
+            return '<%s.%s(%s)>' % (
+                self.__module__,
+                self.__class__.__qualname__,
+                ', '.join(
+                    itertools.chain(
+                        (repr(arg) for arg in self.__wrapped__.args),
+                        ('%s=%r' % (key, value) for key, value in self.__wrapped__.keywords.items())
+                    )
                 )
             )
-        )
+        return '<%s.%s>' % (self.__module__, self.__class__.__qualname__)
 
 
 def funclet(function):
