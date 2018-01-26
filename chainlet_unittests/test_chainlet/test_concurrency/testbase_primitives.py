@@ -3,7 +3,7 @@ import unittest
 import time
 
 import chainlet
-import chainlet.dataflow
+from chainlet.dataflow import NoOp, MergeLink
 
 from chainlet_unittests.utility import Adder
 
@@ -14,20 +14,13 @@ def sleep(value, seconds):
     return value
 
 
-@chainlet.joinlet
-@chainlet.forklet
-@chainlet.funclet
-def restripe(value):
-    return (val for val in value)
-
-
 class PrimitiveTestCases(object):
     class ConcurrentBundle(unittest.TestCase):
         bundle_type = chainlet.chainlink.Bundle
 
         def test_concurrent(self):
             """concurrent sleep"""
-            sleep_chain = chainlet.dataflow.NoOp() >> self.bundle_type((sleep(seconds=0.1) for _ in range(5)))
+            sleep_chain = NoOp() >> self.bundle_type((sleep(seconds=0.1) for _ in range(5)))
             start_time = time.time()
             result = sleep_chain.send(1)
             end_time = time.time()
@@ -60,12 +53,12 @@ class PrimitiveTestCases(object):
             delay = 0.00001  # sleep to interleave threads
             for elements in itertools.product(primitives, repeat=6):
                 a, b, c, d, e, f = elements
-                reference_chain = a >> (b, c, d) >> (restripe() >> c, restripe() >> d, e) >> f
-                concurrent_chain = a >> restripe() >> self.bundle_type(
+                reference_chain = a >> (b, c, d) >> (MergeLink() >> c, MergeLink() >> d, e) >> f
+                concurrent_chain = a >> self.bundle_type(
                     (sleep(seconds=delay) >> b, sleep(seconds=delay) >> c, sleep(seconds=delay) >> d)) >> self.bundle_type(
                     (
-                        restripe() >> sleep(seconds=delay) >> c,
-                        restripe() >> sleep(seconds=delay) >> d,
+                        MergeLink() >> sleep(seconds=delay) >> c,
+                        MergeLink() >> sleep(seconds=delay) >> d,
                         sleep(seconds=delay) >> e)
                 ) >> f
                 for initial in (0, -12, 124, -12234, +1E6):
