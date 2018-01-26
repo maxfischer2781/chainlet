@@ -1,35 +1,12 @@
-from __future__ import division, absolute_import
+from __future__ import division, absolute_import, print_function
 import sys
 
+from . import signals
+from .signals import StopTraversal
+from .chainsend import lazy_send
 from .compat import throw_method as _throw_method
 
-
-__all__ = ['StopTraversal', 'ChainLink']
-
-
-class StopTraversal(Exception):
-    """
-    Stop the traversal of a chain
-
-    Any chain element raising :py:exc:`~.StopTraversal` signals that
-    subsequent elements of the chain should not be visited with the current value.
-
-    Raising :py:exc:`~.StopTraversal` does *not* mean the element is exhausted.
-    It may still produce values regularly on future traversal.
-    If an element will *never* produce values again, it should raise :py:exc:`StopIteration`.
-
-    :note: This signal explicitly affects the current chain only. It does not
-           affect other, parallel chains of a graph.
-
-    .. versionchanged:: 1.3
-       The ``return_value`` parameter was removed.
-    """
-    def __init__(self):
-        Exception.__init__(self)
-
-
-class _ElementExhausted(Exception):
-    """An element has no more values to produce"""
+__all__ = ['ChainLink']
 
 
 class LinkPrimitives(object):
@@ -265,7 +242,7 @@ class ChainLink(object):
                 result = list(self.chainlet_send(None))
                 if result:
                     yield result
-            except (StopIteration, _ElementExhausted):
+            except (StopIteration, signals.ChainExit):
                 break
 
     def __next__(self):
@@ -405,27 +382,23 @@ class Bundle(CompoundLink):
     chain_join = False
     chain_fork = True
 
+    def __init__(self, elements):
+        super(Bundle, self).__init__(elements)
+        if self.elements:
+            self.chain_join = any(element.chain_join for element in self.elements)
+
     def chainlet_send(self, value=None):
+        if self.chain_join:
+            values = list(value)
+        else:
+            values = (value,)
         results = []
         elements_exhausted = 0
         for element in self.elements:
-            if element.chain_fork:
-                try:
-                    results.extend(element.chainlet_send(value))
-                except StopIteration:
-                    elements_exhausted += 1
-            else:
-                # this is a bit of a judgement call - MF@20170329
-                # either we
-                # - catch StopTraversal and return, but that means further elements will still get it
-                # - we suppress StopTraversal, denying any return_value
-                # - we return the Exception, which means later elements must check/filter it
-                try:
-                    results.append(element.chainlet_send(value))
-                except StopTraversal:
-                    continue
-                except StopIteration:
-                    elements_exhausted += 1
+            try:
+                results.extend(lazy_send(element, values))
+            except signals.ChainExit:
+                elements_exhausted += 1
         if elements_exhausted == len(self.elements):
             raise StopIteration
         return results
@@ -544,19 +517,7 @@ class Chain(CompoundLink):
             values = [value]
         try:
             for element in self.elements:
-                # aggregate input for joining paths, flatten output of parallel paths
-                if element.chain_join and element.chain_fork:
-                    values = self._send_n_to_m(element, values)
-                # flatten output of parallel paths for each input
-                elif not element.chain_join and element.chain_fork:
-                    values = self._send_1_to_m(element, values)
-                # neither fork nor join, unwrap input and output
-                elif not element.chain_join and not element.chain_fork:
-                    values = self._send_1_to_1(element, values)
-                elif element.chain_join and not element.chain_fork:
-                    values = self._send_n_to_1(element, values)
-                else:
-                    raise NotImplementedError
+                values = lazy_send(element, values)
                 if not values:
                     break
             if self.chain_fork:
@@ -567,48 +528,8 @@ class Chain(CompoundLink):
                 except IndexError:
                     raise StopTraversal
         # An element in the chain is exhausted permanently
-        except _ElementExhausted:
+        except signals.ChainExit:
             raise StopIteration
-
-    @staticmethod
-    def _send_n_to_m(element, values):
-        # aggregate input for joining paths, flatten output of parallel paths
-        # iterator goes in, iterator comes out
-        return element.chainlet_send(values)
-
-    @staticmethod
-    def _send_1_to_m(element, values):
-        # flatten output of parallel paths for each input
-        # chunks from iterator go in, iterator comes out for each chunk
-        for value in values:
-            try:
-                for return_value in element.chainlet_send(value):
-                    yield return_value
-            except StopTraversal:
-                continue
-            except StopIteration:
-                raise _ElementExhausted
-
-    @staticmethod
-    def _send_n_to_1(element, values):
-        # aggregate input for joining paths
-        # iterator goes in, values comes out
-        try:
-            return [element.chainlet_send(values)]
-        except StopTraversal:
-            return []
-
-    @staticmethod
-    def _send_1_to_1(element, values):
-        # unpack input, pack output
-        # chunks from iterator go in, one chunk comes out for each chunk
-        for value in values:
-            try:
-                yield element.chainlet_send(value)
-            except StopTraversal:
-                continue
-            except StopIteration:
-                raise _ElementExhausted
 
     def __repr__(self):
         return ' >> '.join(repr(elem) for elem in self.elements)

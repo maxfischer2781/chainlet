@@ -34,6 +34,8 @@ v1.3.0
 
     **Bug Fixes**
 
+        * A ``Bundle`` will now properly ``join`` the stream if any of its elements does so.
+
         * Correctly unwrapping return value for any ``Chain`` which does not ``fork``.
 
         * ``FunctionLink`` and ``funclet`` support positional arguments

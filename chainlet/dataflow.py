@@ -6,6 +6,7 @@ import itertools
 import collections
 import numbers
 
+import chainlet.signals
 from . import chainlink
 from . import utility
 
@@ -166,7 +167,7 @@ class MergeLink(chainlink.ChainLink):
         try:
             base_value = next(iter_values)
         except StopIteration:
-            raise chainlink.StopTraversal
+            raise chainlet.signals.StopTraversal
         sample_type = type(base_value)
         try:
             merger = self._cache_mapping[sample_type]
@@ -230,11 +231,11 @@ class Either(chainlink.ChainLink):
         for choice in self.choices:
             try:
                 return choice.chainlet_send(value)
-            except chainlink.StopTraversal:
+            except chainlet.signals.StopTraversal:
                 continue
         if self.default is not self.NO_DEFAULT:
             return self.default
-        raise chainlink.StopTraversal
+        raise chainlet.signals.StopTraversal
 
     def __repr__(self):
         if self.default:

@@ -6,6 +6,7 @@ import threading
 import chainlet
 import chainlet.dataflow
 import chainlet.chainlink
+import chainlet.signals
 
 
 class NamedChainlet(chainlet.dataflow.NoOp):
@@ -79,7 +80,7 @@ def produce(iterable):
 @chainlet.funclet
 def abort_swallow(value):
     """Always abort the chain without returning"""
-    raise chainlet.chainlink.StopTraversal
+    raise chainlet.signals.StopTraversal
 
 
 class AbortEvery(chainlet.ChainLink):
@@ -97,7 +98,7 @@ class AbortEvery(chainlet.ChainLink):
         self._count += 1
         if self._count % self.every:
             return value
-        raise chainlet.chainlink.StopTraversal
+        raise chainlet.signals.StopTraversal
 
 
 class ReturnEvery(chainlet.ChainLink):
@@ -114,6 +115,6 @@ class ReturnEvery(chainlet.ChainLink):
     def chainlet_send(self, value=None):
         if self._count % self.every:
             self._count += 1
-            raise chainlet.chainlink.StopTraversal
+            raise chainlet.signals.StopTraversal
         self._count += 1
         return value
