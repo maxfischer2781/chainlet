@@ -57,16 +57,16 @@ class PrimitiveTestCases(object):
         def test_repacking(self):
             """chained bundles as `a >> (b, c, d) >> (e, f, g) >> ..."""
             primitives = [Adder(val) for val in (0, -2, -1E6)]
-            delay = 0.00001
+            delay = 0.00001  # sleep to interleave threads
             for elements in itertools.product(primitives, repeat=6):
                 a, b, c, d, e, f = elements
-                reference_chain = a >> (b, c, d) >> (c, d, e) >> f
-                concurrent_chain = a >> self.bundle_type(
+                reference_chain = a >> (b, c, d) >> (restripe() >> c, restripe() >> d, e) >> f
+                concurrent_chain = a >> restripe() >> self.bundle_type(
                     (sleep(seconds=delay) >> b, sleep(seconds=delay) >> c, sleep(seconds=delay) >> d)) >> self.bundle_type(
                     (
                         restripe() >> sleep(seconds=delay) >> c,
                         restripe() >> sleep(seconds=delay) >> d,
-                        restripe() >> sleep(seconds=delay) >> e)
+                        sleep(seconds=delay) >> e)
                 ) >> f
                 for initial in (0, -12, 124, -12234, +1E6):
                     sequential = reference_chain.send(initial)
