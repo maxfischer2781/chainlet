@@ -11,7 +11,7 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, CPU_CONCURRENCY, FutureChainResults
+from .base import StoredFuture, CPU_CONCURRENCY, FutureChainResults, multi_iter
 from ..chainsend import eager_send
 
 
@@ -134,13 +134,16 @@ class ThreadBundle(chainlink.Bundle):
 
     def chainlet_send(self, value=None):
         if self.chain_join:
-            values = list(value)
+            return FutureChainResults([
+                self.executor.submit(eager_send, element, values)
+                for element, values in zip(self.elements, multi_iter(value, len(self.elements)))
+            ])
         else:
             values = (value,)
-        return FutureChainResults([
-            self.executor.submit(eager_send, element, values)
-            for element in self.elements
-        ])
+            return FutureChainResults([
+                self.executor.submit(eager_send, element, values)
+                for element in self.elements
+            ])
 
 
 ThreadLinkPrimitives.base_bundle_type = ThreadBundle
