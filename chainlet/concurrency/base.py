@@ -1,8 +1,7 @@
 import threading
 import multiprocessing
-
-import chainlet.signals
-from .. import chainlink
+import collections
+import itertools
 
 
 CPU_CONCURRENCY = multiprocessing.cpu_count()
@@ -152,3 +151,44 @@ class FutureChainResults(object):
         for item in self._results[result_idx:]:
             yield item
         self._set_done()
+
+
+class SafeTee(object):
+    """
+    Thead-safe version of :py:func:`itertools.tee`
+
+    :param iterable: source iterable to split
+    :param n: number of safe iterators to produce for `iterable`
+    :type n: int
+    """
+    def __init__(self, iterable, n=2):
+        self._count = n
+        self._tees = iter(itertools.tee(iterable, n))
+        self._mutex = threading.Lock()
+
+    def __iter__(self):
+        try:
+            tee = next(self._tees)
+        except StopIteration:
+            raise ValueError('too many iterations (expected %d)' % self._count)
+        try:
+            while True:
+                with self._mutex:
+                    value = next(tee)
+                yield value
+        except StopIteration:
+            return
+
+
+def multi_iter(iterable, count=2):
+    """Return `count` independent, thread-safe iterators for `iterable`"""
+    # no need to special-case re-usable, container-like iterables
+    if not isinstance(
+            iterable,
+            (
+                    list, tuple, set,
+                    FutureChainResults,
+                    collections.Sequence, collections.Set, collections.Mapping, collections.MappingView
+            )):
+        iterable = SafeTee(iterable, n=count)
+    return (iter(iterable) for _ in range(count))
