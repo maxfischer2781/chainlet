@@ -155,7 +155,7 @@ class FutureChainResults(object):
 
 class SafeTee(object):
     """
-    Thead-safe version of :py:func:`itertools.tee`
+    Thread-safe version of :py:func:`itertools.tee`
 
     :param iterable: source iterable to split
     :param n: number of safe iterators to produce for `iterable`
