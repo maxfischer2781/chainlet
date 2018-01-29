@@ -196,3 +196,29 @@ def multi_iter(iterable, count=2):
             )):
         iterable = SafeTee(iterable, n=count)
     return (iter(iterable) for _ in range(count))
+
+
+class LocalExecutor(object):
+    """
+    Executor for futures using local execution stacks without concurrency
+
+    :param max_workers: maximum number of threads in pool
+    :type max_workers: int or float
+    :param identifier: base identifier for all workers
+    :type identifier: str
+    """
+    _min_workers = max(CPU_CONCURRENCY, 2)
+
+    def __init__(self, max_workers, identifier=''):
+        self.identifier = identifier or ('%s_%d' % (self.__class__.__name__, id(self)))
+        self._max_workers = max_workers if max_workers > 0 else float('inf')
+
+    @staticmethod
+    def submit(call, *args, **kwargs):
+        """
+        Submit a call for future execution
+
+        :return: future for the call execution
+        :rtype: StoredFuture
+        """
+        return StoredFuture(call, *args, **kwargs)

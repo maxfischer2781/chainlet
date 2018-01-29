@@ -11,11 +11,11 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, CPU_CONCURRENCY, FutureChainResults, multi_iter
+from .base import StoredFuture, CPU_CONCURRENCY, FutureChainResults, multi_iter, LocalExecutor
 from ..chainsend import eager_send
 
 
-class ThreadPoolExecutor(object):
+class ThreadPoolExecutor(LocalExecutor):
     """
     Executor for futures using a pool of threads
 
@@ -27,9 +27,8 @@ class ThreadPoolExecutor(object):
     _min_workers = max(CPU_CONCURRENCY, 2)
 
     def __init__(self, max_workers, identifier=''):
-        self._max_workers = max_workers if max_workers > 0 else float('inf')
+        super(ThreadPoolExecutor, self).__init__(max_workers=max_workers, identifier=identifier)
         self._workers = set()
-        self._identifier = identifier or ('%s_%d' % (self.__class__.__name__, id(self)))
         self._queue = queue.Queue()
         self._ensure_worker()
         # need to pass in queue.Empty as queue module may be collected on shutdown
@@ -85,11 +84,11 @@ class ThreadPoolExecutor(object):
         return True
 
     def _ensure_worker(self):
-        """Ensure there are enougn workers available"""
+        """Ensure there are enough workers available"""
         while len(self._workers) < self._min_workers or len(self._workers) < self._queue.qsize() < self._max_workers:
             worker = threading.Thread(
                 target=self._execute_futures,
-                name=self._identifier + '_%d' % time.time(),
+                name=self.identifier + '_%d' % time.time(),
             )
             worker.daemon = True
             self._workers.add(worker)
