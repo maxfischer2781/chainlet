@@ -4,6 +4,14 @@ import unittest
 from chainlet.concurrency import base
 
 
+def return_stored(payload):
+    return payload
+
+
+def raise_stored(payload):
+    raise payload
+
+
 class TestMultiIter(unittest.TestCase):
     def test_builtin(self):
         """multi iter on list, tuple, ..."""
@@ -43,3 +51,26 @@ class TestMultiIter(unittest.TestCase):
             next(c)
         # test final iteration
         self.assertEqual(set(d), set(values))
+
+
+class TestFutureChainResults(unittest.TestCase):
+    def test_exception(self):
+        for ex_type in (Exception, ArithmeticError, KeyError, IndexError, OSError, AssertionError, SystemExit):
+            with self.subTest(ex_type=ex_type):
+                raise_middle_iterable = base.FutureChainResults([
+                    base.StoredFuture(return_stored, [1, 2]),
+                    base.StoredFuture(raise_stored, ex_type),
+                    base.StoredFuture(return_stored, [3])
+                ])
+                a, b, c, d = (iter(raise_middle_iterable) for _ in range(4))
+                self.assertEqual((next(a), next(b)), (1, 1))
+                self.assertEqual((next(a), next(b), next(c)), (2, 2, 1))
+                self.assertEqual(next(c), 2)
+                with self.assertRaises(ex_type):
+                    next(a)
+                with self.assertRaises(ex_type):
+                    next(b)
+                with self.assertRaises(ex_type):
+                    next(c)
+                with self.assertRaises(ex_type):
+                    list(d)
