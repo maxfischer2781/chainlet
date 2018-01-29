@@ -11,8 +11,7 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, CPU_CONCURRENCY, FutureChainResults, multi_iter, LocalExecutor, LocalBundle
-from ..chainsend import eager_send
+from .base import StoredFuture, CPU_CONCURRENCY, LocalExecutor, LocalBundle
 
 
 class ThreadPoolExecutor(LocalExecutor):
