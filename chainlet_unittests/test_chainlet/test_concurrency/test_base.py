@@ -32,7 +32,8 @@ class TestMultiIter(unittest.TestCase):
         # test single iteration
         self.assertEqual(set(a), set(values))
         # test interleaved iteration
-        for _ in range(9):
+        self.assertEqual((next(b), next(b)), (next(c), next(c)))
+        for _ in range(8):
             self.assertEqual(next(b), next(c))
             self.assertEqual(next(c), next(b))
         self.assertEqual((next(b), next(b)), (next(c), next(c)))
