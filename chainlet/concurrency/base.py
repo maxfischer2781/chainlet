@@ -3,6 +3,9 @@ import multiprocessing
 import collections
 import itertools
 
+from .. import chainlink
+from ..chainsend import eager_send
+
 
 CPU_CONCURRENCY = multiprocessing.cpu_count()
 
@@ -222,3 +225,31 @@ class LocalExecutor(object):
         :rtype: StoredFuture
         """
         return StoredFuture(call, *args, **kwargs)
+
+
+DEFAULT_EXECUTOR = LocalExecutor(-1, 'chainlet_local')
+
+
+class LocalBundle(chainlink.Bundle):
+    """
+    A group of chainlets that concurrently process each :term:`data chunk`
+
+    Processing of chainlets is performed using only the requresting threads.
+    This allows thread-safe usage, but requires explicit concurrent usage
+    for blocking actions, such as file I/O or :py:func:`time.sleep`,
+    to be run in parallel.
+    """
+    executor = DEFAULT_EXECUTOR
+
+    def chainlet_send(self, value=None):
+        if self.chain_join:
+            return FutureChainResults([
+                self.executor.submit(eager_send, element, values)
+                for element, values in zip(self.elements, multi_iter(value, len(self.elements)))
+            ])
+        else:
+            values = (value,)
+            return FutureChainResults([
+                self.executor.submit(eager_send, element, values)
+                for element in self.elements
+            ])
