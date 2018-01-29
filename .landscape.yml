@@ -4,6 +4,7 @@ autodetect: true
 
 ignore-paths:
     - chainlet_unittests
+    - docs
 
 pep8:
   disable:
