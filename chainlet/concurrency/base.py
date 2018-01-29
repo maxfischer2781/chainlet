@@ -95,6 +95,8 @@ class FutureChainResults(object):
     :param futures: the stored futures for each result chunk
     :type futures: list[StoredFuture]
     """
+    __slots__ = ('_futures', '_results', '_exception', '_done', '_result_lock')
+
     def __init__(self, futures):
         self._futures = iter(futures)
         self._results = []
@@ -161,6 +163,8 @@ class SafeTee(object):
     :param n: number of safe iterators to produce for `iterable`
     :type n: int
     """
+    __slots__ = ('_count', '_tees', '_mutex')
+
     def __init__(self, iterable, n=2):
         self._count = n
         self._tees = iter(itertools.tee(iterable, n))
