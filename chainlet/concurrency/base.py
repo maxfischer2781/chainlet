@@ -43,7 +43,7 @@ class StoredFuture(object):
                 call, args, kwargs = self._instruction
                 try:
                     result = call(*args, **kwargs)
-                except Exception as err:
+                except BaseException as err:
                     self._result = None, err
                 else:
                     self._result = result, None
@@ -139,7 +139,7 @@ class FutureChainResults(object):
                         break
                     try:
                         results = future.result
-                    except Exception as err:
+                    except BaseException as err:
                         self._exception = err
                         break
                     else:
