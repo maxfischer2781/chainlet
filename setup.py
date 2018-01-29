@@ -115,6 +115,7 @@ if __name__ == '__main__':
         author_email=package_about['__email__'],
         url=package_about['__url__'],
         packages=find_packages(),
+        zip_safe=True,
         # dependencies
         install_requires=[],
         # metadata for package seach
