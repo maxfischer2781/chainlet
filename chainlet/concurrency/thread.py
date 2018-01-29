@@ -113,57 +113,5 @@ class ThreadBundle(LocalBundle):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
 
-    def _link_child(self, child):
-        if child.chain_join:
-            return self._link(self, child)
-        return self.chain_types.base_bundle_type(
-            sub_chain >> child for sub_chain in self.elements
-        )
-
-    def __rshift__(self, child):
-        """
-        self >> child
-
-        :param child: following link to bind
-        :type child: ChainLink or iterable[ChainLink]
-        :returns: link between self and child
-        :rtype: ChainLink, FlatChain, Bundle or Chain
-        """
-        return self._link_child(self.chain_types.convert(child))
-
 
 ThreadLinkPrimitives.base_bundle_type = ThreadBundle
-
-
-if __name__ == "__main__":
-    # test/demonstration code
-    import chainlet.dataflow
-    import chainlet._debug
-    import sys
-
-    @chainlet.funclet
-    def sleep(value, seconds, identifier='<anon>'):
-        print(threading.get_ident(), 'sleep', seconds, '@', identifier, value)
-        time.sleep(seconds)
-        return value
-
-    try:
-        count = int(sys.argv[1])
-    except IndexError:
-        count = 4
-    try:
-        duration = float(sys.argv[2])
-    except IndexError:
-        duration = 1.0 / count
-    print('Chain [%d/%d] >> 1/%d' % (count, count, count))
-    print('Main', threading.get_ident())
-    noop = chainlet.dataflow.NoOp()
-    chn = noop >> ThreadBundle([sleep(seconds=duration, identifier=_) for _ in range(count)]) >> sleep(seconds=duration) >> noop
-    print(chn)
-    start_time = time.time()
-    chn.send(start_time)
-    end_time = time.time()
-    delta = end_time - start_time
-    ideal = duration * 2
-    per_thread = (delta - ideal) / count
-    print('total=%.2f' % delta, 'ideal=%.2f' % ideal, 'reldev=%02d%%' % ((delta - ideal) / ideal * 100), 'perthread', per_thread)
