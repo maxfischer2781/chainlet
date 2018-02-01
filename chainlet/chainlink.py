@@ -252,7 +252,7 @@ class ChainLink(object):
             return self.__next__()
 
     def send(self, value=None):
-        """Send a value to this element for processing"""
+        """Send a single value to this element for processing"""
         if self.chain_fork:
             return self._send_fork(value)
         return self._send_flat(value)
@@ -265,6 +265,11 @@ class ChainLink(object):
 
     def _send_fork(self, value=None):
         return list(self.chainlet_send(value))
+
+    def dispatch(self, values):
+        """Dispatch multiple values to this element for processing"""
+        for result in lazy_send(self, values):
+            yield result
 
     def chainlet_send(self, value=None):
         """Send a value to this element for processing"""
