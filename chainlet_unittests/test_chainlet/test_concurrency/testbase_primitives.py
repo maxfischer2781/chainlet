@@ -17,6 +17,7 @@ def sleep(value, seconds):
 class PrimitiveTestCases(object):
     class ConcurrentChain(unittest.TestCase):
         chain_type = chainlet.chainlink.Chain
+        converter = None
 
         def test_concurrent(self):
             """concurrent sleep"""
@@ -27,12 +28,35 @@ class PrimitiveTestCases(object):
             self.assertEqual(result, list(range(1, 6)))
             self.assertLess(end_time - start_time, 0.5)
 
+        def test_convert_concurrent(self):
+            """concurrent sleep from converter"""
+            if self.converter is None:
+                raise unittest.SkipTest('no converter for %s' % self.__class__.__name__)
+            sleep_chain = self.converter(Adder(1) >> sleep(seconds=0.05) >> sleep(seconds=0.05))
+            start_time = time.time()
+            result = list(sleep_chain.dispatch(range(5)))
+            end_time = time.time()
+            self.assertEqual(result, list(range(1, 6)))
+            self.assertLess(end_time - start_time, 0.5)
+
     class ConcurrentBundle(unittest.TestCase):
         bundle_type = chainlet.chainlink.Bundle
+        converter = None
 
         def test_concurrent(self):
             """concurrent sleep"""
             sleep_chain = NoOp() >> self.bundle_type((sleep(seconds=0.1) for _ in range(5)))
+            start_time = time.time()
+            result = sleep_chain.send(1)
+            end_time = time.time()
+            self.assertEqual(result, [1, 1, 1, 1, 1])
+            self.assertLess(end_time - start_time, 0.5)
+
+        def test_convert_concurrent(self):
+            """concurrent sleep from converter"""
+            if self.converter is None:
+                raise unittest.SkipTest('no converter for %s' % self.__class__.__name__)
+            sleep_chain = NoOp() >> self.converter([sleep(seconds=0.1) for _ in range(5)])
             start_time = time.time()
             result = sleep_chain.send(1)
             end_time = time.time()
