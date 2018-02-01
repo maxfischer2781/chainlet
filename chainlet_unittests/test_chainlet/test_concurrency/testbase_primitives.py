@@ -15,6 +15,18 @@ def sleep(value, seconds):
 
 
 class PrimitiveTestCases(object):
+    class ConcurrentChain(unittest.TestCase):
+        chain_type = chainlet.chainlink.Chain
+
+        def test_concurrent(self):
+            """concurrent sleep"""
+            sleep_chain = self.chain_type((sleep(seconds=0.05), sleep(seconds=0.05)))
+            start_time = time.time()
+            result = list(sleep_chain.dispatch(range(5)))
+            end_time = time.time()
+            self.assertEqual(result, list(range(5)))
+            self.assertLess(end_time - start_time, 0.5)
+
     class ConcurrentBundle(unittest.TestCase):
         bundle_type = chainlet.chainlink.Bundle
 
