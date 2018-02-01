@@ -22,6 +22,9 @@ v1.3.0
           returning ``None`` or an empty iterable instead of blocking indefinitely.
           See `issue #8 <https://github.com/maxfischer2781/chainlet/issues/8>`_ for details.
 
+        * Added ``chainlet.dispatch(iterable)`` to ``send`` an entire stream slice at once.
+          This allows for internal lazy and concurrent evaluation.
+
         * Deprecated the use of external linkers in favour of operator+constructor.
 
         * Linking to chains ignores elements which are ``False`` in a boolean sense, e.g. an empty ``CompoundLink``.
