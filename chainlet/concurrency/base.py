@@ -262,6 +262,9 @@ class LocalChain(chainlink.Chain):
     def __init__(self, elements):
         super(LocalChain, self).__init__(elements)
         self._stripes = None
+        # need to receive all data for parallelism
+        self.chain_join = True
+        self.chain_fork = True
 
     def _compile_stripes(self):
         stripes, buffer = [], []
@@ -278,6 +281,8 @@ class LocalChain(chainlink.Chain):
                     buffer = []
                 else:
                     stripes.append(element)
+            else:
+                buffer.append(element)
         if buffer:
             stripes.append(chainlink.Chain(buffer))
         self._stripes = stripes
@@ -292,10 +297,10 @@ class LocalChain(chainlink.Chain):
         try:
             for stripe in self._stripes:
                 if not stripe.chain_join:
-                    values = [
+                    values = FutureChainResults([
                         self.executor.submit(eager_send, stripe, [value])
                         for value in values
-                    ]
+                    ])
                 else:
                     values = eager_send(stripe, values)
                 if not values:
