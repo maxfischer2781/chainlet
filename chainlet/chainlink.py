@@ -2,7 +2,6 @@ from __future__ import division, absolute_import, print_function
 import sys
 
 from . import signals
-from .signals import StopTraversal
 from .chainsend import lazy_send
 from .compat import throw_method as _throw_method
 
@@ -231,7 +230,7 @@ class ChainLink(object):
         while True:
             try:
                 yield self.chainlet_send(None)
-            except StopTraversal:
+            except signals.StopTraversal:
                 continue
             except StopIteration:
                 break
@@ -261,7 +260,7 @@ class ChainLink(object):
     def _send_flat(self, value=None):
         try:
             return self.chainlet_send(value)
-        except StopTraversal:
+        except signals.StopTraversal:
             return None
 
     def _send_fork(self, value=None):
@@ -526,7 +525,7 @@ class Chain(CompoundLink):
                 try:
                     return next(iter(values))
                 except IndexError:
-                    raise StopTraversal
+                    raise signals.StopTraversal
         # An element in the chain is exhausted permanently
         except signals.ChainExit:
             raise StopIteration
