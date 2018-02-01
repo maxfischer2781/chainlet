@@ -4,6 +4,7 @@ import collections
 import itertools
 
 from .. import chainlink
+from .. import signals
 from ..chainsend import eager_send
 
 
@@ -234,7 +235,7 @@ class LocalBundle(chainlink.Bundle):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
-    Processing of chainlets is performed using only the requresting threads.
+    Processing of chainlets is performed using only the requesting threads.
     This allows thread-safe usage, but requires explicit concurrent usage
     for blocking actions, such as file I/O or :py:func:`time.sleep`,
     to be run in parallel.
@@ -253,3 +254,59 @@ class LocalBundle(chainlink.Bundle):
                 self.executor.submit(eager_send, element, values)
                 for element in self.elements
             ])
+
+
+class LocalChain(chainlink.Chain):
+    executor = DEFAULT_EXECUTOR
+
+    def __init__(self, elements):
+        super(LocalChain, self).__init__(elements)
+        self._stripes = None
+
+    def _compile_stripes(self):
+        stripes, buffer = [], []
+        for element in self.elements:
+            if element.chain_join:
+                if buffer:
+                    stripes.append(chainlink.Chain(buffer))
+                    buffer = []
+                stripes.append(element)
+            elif element.chain_fork:
+                if buffer:
+                    buffer.append(element)
+                    stripes.append(chainlink.Chain(buffer))
+                    buffer = []
+                else:
+                    stripes.append(element)
+        if buffer:
+            stripes.append(chainlink.Chain(buffer))
+        self._stripes = stripes
+
+    def chainlet_send(self, value=None):
+        if self._stripes is None:
+            self._compile_stripes()
+        if self.chain_join:
+            values = value
+        else:
+            values = [value]
+        try:
+            for stripe in self._stripes:
+                if not stripe.chain_join:
+                    values = [
+                        self.executor.submit(eager_send, stripe, [value])
+                        for value in values
+                    ]
+                else:
+                    values = eager_send(stripe, values)
+                if not values:
+                    break
+            if self.chain_fork:
+                return values
+            else:
+                try:
+                    return next(iter(values))
+                except IndexError:
+                    raise signals.StopTraversal
+        # An element in the chain is exhausted permanently
+        except signals.ChainExit:
+            raise StopIteration
