@@ -11,7 +11,7 @@ except ImportError:
     import queue
 
 from .. import chainlink
-from .base import StoredFuture, CPU_CONCURRENCY, LocalExecutor, LocalBundle, LocalChain
+from .base import StoredFuture, CPU_CONCURRENCY, LocalExecutor, ConcurrentBundle, ConcurrentChain
 
 
 class ThreadPoolExecutor(LocalExecutor):
@@ -101,7 +101,7 @@ class ThreadLinkPrimitives(chainlink.LinkPrimitives):
     pass
 
 
-class ThreadBundle(LocalBundle):
+class ThreadBundle(ConcurrentBundle):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
@@ -113,7 +113,7 @@ class ThreadBundle(LocalBundle):
     executor = DEFAULT_EXECUTOR
 
 
-class ThreadChain(LocalChain):
+class ThreadChain(ConcurrentChain):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
 

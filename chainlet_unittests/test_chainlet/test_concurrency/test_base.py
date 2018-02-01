@@ -3,6 +3,8 @@ import unittest
 
 from chainlet.concurrency import base
 
+from . import testbase_primitives
+
 
 def return_stored(payload):
     return payload
@@ -74,3 +76,14 @@ class TestFutureChainResults(unittest.TestCase):
                     next(c)
                 with self.assertRaises(ex_type):
                     list(d)
+
+
+# non-concurrent primitives
+class NonConcurrentBundle(testbase_primitives.PrimitiveTestCases.ConcurrentBundle):
+    test_concurrent = None
+
+
+# dummy-concurrent primitives
+class LocalBundle(testbase_primitives.PrimitiveTestCases.ConcurrentBundle):
+    test_concurrent = None
+    bundle_type = base.ConcurrentBundle

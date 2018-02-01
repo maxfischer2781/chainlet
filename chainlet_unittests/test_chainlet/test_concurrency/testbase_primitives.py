@@ -20,11 +20,11 @@ class PrimitiveTestCases(object):
 
         def test_concurrent(self):
             """concurrent sleep"""
-            sleep_chain = self.chain_type((sleep(seconds=0.05), sleep(seconds=0.05)))
+            sleep_chain = self.chain_type((Adder(1), sleep(seconds=0.05), sleep(seconds=0.05)))
             start_time = time.time()
             result = list(sleep_chain.dispatch(range(5)))
             end_time = time.time()
-            self.assertEqual(result, list(range(5)))
+            self.assertEqual(result, list(range(1, 6)))
             self.assertLess(end_time - start_time, 0.5)
 
     class ConcurrentBundle(unittest.TestCase):

@@ -231,7 +231,7 @@ class LocalExecutor(object):
 DEFAULT_EXECUTOR = LocalExecutor(-1, 'chainlet_local')
 
 
-class LocalBundle(chainlink.Bundle):
+class ConcurrentBundle(chainlink.Bundle):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
@@ -239,6 +239,9 @@ class LocalBundle(chainlink.Bundle):
     This allows thread-safe usage, but requires explicit concurrent usage
     for blocking actions, such as file I/O or :py:func:`time.sleep`,
     to be run in parallel.
+
+    Concurrent bundles implement element concurrency:
+    the same data is processed concurrently by multiple elements.
     """
     executor = DEFAULT_EXECUTOR
 
@@ -256,11 +259,25 @@ class LocalBundle(chainlink.Bundle):
             ])
 
 
-class LocalChain(chainlink.Chain):
+class ConcurrentChain(chainlink.Chain):
+    """
+    A group of chainlets that concurrently process each :term:`data chunk`
+
+    Processing of chainlets is performed using only the requesting threads.
+    This allows thread-safe usage, but requires explicit concurrent usage
+    for blocking actions, such as file I/O or :py:func:`time.sleep`,
+    to be run in parallel.
+
+    Concurrent chains implement data concurrency:
+    multiple data is processed concurrently by the same elements.
+
+    :note: A :py:class:`ConcurrentChain` will *always* :term:`join`
+           and :term:`fork` to handle all data.
+    """
     executor = DEFAULT_EXECUTOR
 
     def __init__(self, elements):
-        super(LocalChain, self).__init__(elements)
+        super(ConcurrentChain, self).__init__(elements)
         self._stripes = None
         # need to receive all data for parallelism
         self.chain_join = True
