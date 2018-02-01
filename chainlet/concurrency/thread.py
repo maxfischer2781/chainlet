@@ -121,3 +121,12 @@ class ThreadChain(ConcurrentChain):
 ThreadLinkPrimitives.base_bundle_type = ThreadBundle
 ThreadLinkPrimitives.base_chain_type = ThreadChain
 ThreadLinkPrimitives.flat_chain_type = ThreadChain
+
+
+def convert(element):
+    element = chainlink.LinkPrimitives().convert(element)
+    if isinstance(element, chainlink.LinkPrimitives.base_bundle_type):
+        return ThreadLinkPrimitives.base_bundle_type(element.elements)
+    elif isinstance(element, chainlink.LinkPrimitives.base_chain_type):
+        return ThreadLinkPrimitives.base_chain_type(element.elements)
+    return element
