@@ -1,5 +1,13 @@
 """
 Thread based concurrency domain
+
+Primitives of this module implement concurrency based on threads.
+This allows blocking actions, such as I/O and certain extension modules, to be run in parallel.
+Note that regular Python code is not parallelised by threads due to the :term:`Global Interpreter Lock`.
+See the :py:mod:`threading` module for details.
+
+:warning: The primitives in this module should not be used manually, and may change without deprecation warning.
+          Use :py:func:`convert` instead.
 """
 from __future__ import print_function
 import threading
@@ -102,13 +110,6 @@ class ThreadLinkPrimitives(chainlink.LinkPrimitives):
 
 
 class ThreadBundle(ConcurrentBundle):
-    """
-    A group of chainlets that concurrently process each :term:`data chunk`
-
-    Processing of chainlets is performed using threads. This allows
-    blocking actions, such as file I/O or :py:func:`time.sleep`,
-    to be run in parallel.
-    """
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
 
@@ -130,6 +131,12 @@ ThreadLinkPrimitives.flat_chain_type = ThreadChain
 
 
 def convert(element):
+    """
+    Convert a regular :term:`chainlink` to a thread based version
+
+    :param element: the chainlink to convert
+    :return: a threaded version of ``element`` if possible, or the element itself
+    """
     element = chainlink.LinkPrimitives().convert(element)
     if isinstance(element, chainlink.LinkPrimitives.base_bundle_type):
         return ThreadLinkPrimitives.base_bundle_type(element.elements)
