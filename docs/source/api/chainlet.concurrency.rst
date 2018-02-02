@@ -11,5 +11,6 @@ Submodules
 
 .. toctree::
 
+   chainlet.concurrency.base
    chainlet.concurrency.thread
 
