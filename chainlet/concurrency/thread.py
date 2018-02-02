@@ -112,10 +112,16 @@ class ThreadBundle(ConcurrentBundle):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
 
+    def __repr__(self):
+        return 'threads(%s)' % super(ThreadBundle, self).__repr__()
+
 
 class ThreadChain(ConcurrentChain):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
+
+    def __repr__(self):
+        return 'threads(%s)' % super(ThreadChain, self).__repr__()
 
 
 ThreadLinkPrimitives.base_bundle_type = ThreadBundle
