@@ -63,7 +63,7 @@ class WrapperMixin(object):
 
     # wraplet specific special methods
     # repr for wraplet instances
-    def __wraplet_repr__(self):
+    def __wraplet_repr__(self):  # pragma: no cover
         return '<%s.%s wraplet at %x>' % (
             self.__module__,
             self.__class__.__qualname__,

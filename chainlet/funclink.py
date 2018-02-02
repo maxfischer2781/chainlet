@@ -105,7 +105,7 @@ class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
         """Send a value to this element"""
         return self.__wrapped__(value)
 
-    def __wraplet_repr__(self):
+    def __wraplet_repr__(self):  # pragma: no cover
         if hasattr(self.__wrapped__, 'args'):
             return '<%s.%s(%s)>' % (
                 self.__module__,
