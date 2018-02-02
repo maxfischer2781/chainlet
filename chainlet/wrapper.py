@@ -26,16 +26,19 @@ class WrapperMixin(object):
 
     .. code:: python
 
-        class MyWrap(WrapperMixin, ChainLink):
+        class SimpleWrapper(WrapperMixin, ChainLink):
+            /"/"/"Chainlink that calls ``slave`` for each chunk/"/"/"
             def __init__(self, slave):
                 super().__init__(slave=slave)
 
-            def send(self, value):
+            def chainlet_send(self, value):
                 value = self.__wrapped__.send(value)
-                super().send(value)
 
     Wrappers bind their slave to ``__wrapped__``, as is the Python standard,
     and also expose them via the ``slave`` property for convenience.
+
+    Additionally, subclasses provide the :py:meth:`~.wraplet` to create factories of wrappers.
+    This requires :py:meth:`~.__init_slave__` to be defined.
     """
     def __init__(self, slave):
         super(WrapperMixin, self).__init__()
@@ -58,46 +61,67 @@ class WrapperMixin(object):
             id(self)
         )
 
-    def __init_slave__(self, raw_slave, *slave_args, **slave_kwargs):
+    # wraplet specific special methods
+    # repr for wraplet instances
+    def __wraplet_repr__(self):  # pragma: no cover
+        return '<%s.%s wraplet at %x>' % (
+            self.__module__,
+            self.__class__.__qualname__,
+            id(self)
+        )
+
+    def __init_slave__(self, slave_factory, *slave_args, **slave_kwargs):
+        """Create a slave from ``slave_factory``"""
         raise NotImplementedError
 
     @classmethod
     def wraplet(cls, *cls_args, **cls_kwargs):
-        def wrapper_factory(raw_slave):
-            """Factory to create a new class by wrapping ``raw_slave``"""
+        """
+        Create a factory to produce a Wrapper from a slave factory
+
+        :param cls_args: positional arguments to provide to the Wrapper class
+        :param cls_kwargs: keyword arguments to provide to the Wrapper class
+        :return:
+
+        .. code:: python
+
+            cls_wrapper_factory = cls.wraplet(*cls_args, **cls_kwargs)
+            link_factory = cls_wrapper_factory(slave_factory)
+            slave_link = link_factory(*slave_args, **slave_kwargs)
+        """
+        if cls.__init_slave__ in (None, WrapperMixin.__init_slave__):
+            raise TypeError('type %r does not implement the wraplet protocol' % getname(cls))
+
+        def wrapper_factory(slave_factory):
+            """Factory to create a new class by wrapping ``slave_factory``"""
             class Wraplet(cls):  # pylint:disable=abstract-method
-                _raw_slave = staticmethod(raw_slave)
+                _slave_factory = staticmethod(slave_factory)
                 # Assign the wrapped attributes directly instead of
                 # using functools.wraps, as we may deal with arbitrarry
                 # class/callable combinations.
-                __doc__ = raw_slave.__doc__
+                __doc__ = slave_factory.__doc__
                 # While the wrapped instance wraps the slave, the
                 # wrapper class wraps the slave factory. Any instance
                 # then just hides the class level attribute.
                 # Exposing __wrapped__ here allows introspection,such
                 # as inspect.signature, to pick up metadata.
-                __wrapped__ = raw_slave
+                __wrapped__ = slave_factory
                 # In Py3.X, objects without any annotations just provide an
                 # empty dict.
-                __annotations__ = getattr(raw_slave, '__annotations__', {})
+                __annotations__ = getattr(slave_factory, '__annotations__', {})
 
                 def __init__(self, *slave_args, **slave_kwargs):
-                    slave = self.__init_slave__(self._raw_slave, *slave_args, **slave_kwargs)
+                    slave = self.__init_slave__(self._slave_factory, *slave_args, **slave_kwargs)
                     super(Wraplet, self).__init__(slave, *cls_args, **cls_kwargs)
 
-                def __repr__(self):
-                    return '<%s wrapper %s.%s at %x>' % (
-                        self.__class__.__name__, self.__module__,
-                        self.__class__.__qualname__,
-                        id(self)
-                    )
+                __repr__ = cls.__wraplet_repr__
 
             # swap places with our target so that both can be pickled/unpickled
-            Wraplet.__name__ = getname(raw_slave).split('.')[-1]
-            Wraplet.__qualname__ = getname(raw_slave)
-            Wraplet.__module__ = raw_slave.__module__
+            Wraplet.__name__ = getname(slave_factory).split('.')[-1]
+            Wraplet.__qualname__ = getname(slave_factory)
+            Wraplet.__module__ = slave_factory.__module__
             # this is enough for Py3.4+ to find the slave
-            raw_slave.__qualname__ = Wraplet.__qualname__ + '._raw_slave'
+            slave_factory.__qualname__ = Wraplet.__qualname__ + '._slave_factory'
             # ## This is an EVIL hack! Do not use use this at home unless you understand it! ##
             # enable python2 lookup of the slave via its wrapper
             # This allows to implicitly pickle slave objects which already support pickle,
@@ -124,8 +148,8 @@ class WrapperMixin(object):
                 # @wraplet\ndef slave
                 #   Neither slave nor Wrapper exist in the namespace yet (they are only bound *after*
                 #   the wraplet returns). No object may exist with the same name.
-                if getattr(sys.modules[raw_slave.__module__], raw_slave.__name__, raw_slave) is raw_slave:
-                    raw_slave.__name__ += name_separator + '_raw_slave'
-                    setattr(sys.modules[raw_slave.__module__], raw_slave.__name__, raw_slave)
+                if getattr(sys.modules[slave_factory.__module__], slave_factory.__name__, slave_factory) is slave_factory:
+                    slave_factory.__name__ += name_separator + '_slave_factory'
+                    setattr(sys.modules[slave_factory.__module__], slave_factory.__name__, slave_factory)
             return Wraplet
         return wrapper_factory

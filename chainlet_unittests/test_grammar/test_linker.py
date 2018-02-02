@@ -1,7 +1,12 @@
 import itertools
 import unittest
+import operator
+try:
+    _reduce = reduce
+except NameError:
+    from functools import reduce as _reduce
 
-from chainlet.chainlink import FlatChain, Bundle
+from chainlet.chainlink import FlatChain, Bundle, NeutralLink
 
 from chainlet_unittests.utility import NamedChainlet
 
@@ -40,15 +45,45 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertNotEqual(chain_a_parent_sub, chain_a_parent_full)
 
     def test_single(self):
-        """Empty link as `() >> child_a`"""
+        """Isolated link as `() >> child_a`"""
         chainlets = [NamedChainlet(idx) for idx in range(3)]
         for singlet in chainlets:
-            for empty in (FlatChain(()), Bundle(()), (), set(), [], set()):
+            for empty in (FlatChain(()), Bundle(()), NeutralLink(), (), set(), [], set()):
                 with self.subTest(singlet=singlet, empty=empty):
                     single_out = singlet >> empty
                     self.assertIs(single_out, singlet)
                     single_in = empty >> singlet
                     self.assertIs(single_in, singlet)
+
+    def test_operator(self):
+        """Programmatic link with operator.rshift/operator.lshift"""
+        chainlets = [NamedChainlet(idx) for idx in range(10)]
+        chain_full = _reduce(operator.rshift, chainlets)
+        self.assertSequenceEqual(chain_full.elements, chainlets)
+        chain_full_inv = _reduce(operator.lshift, chainlets)
+        self.assertSequenceEqual(chain_full_inv.elements, list(reversed(chainlets)))
+        link_chain = NeutralLink()
+        call_chain = NeutralLink()
+        for idx, link in enumerate(chainlets):
+            prev_link_chain, prev_call_chain = link_chain, call_chain
+            link_chain = link_chain >> link
+            call_chain = operator.rshift(call_chain, link)
+            self.assertEqual(link_chain, call_chain)
+            # do not allow mutating existing chain
+            self.assertNotEqual(link_chain, prev_link_chain)
+            self.assertNotEqual(call_chain, prev_call_chain)
+
+    def test_empty(self):
+        """Empty link as `() >> ()`"""
+        for empty_a in (FlatChain(()), Bundle(()), NeutralLink()):
+            for empty_b in (FlatChain(()), Bundle(()), NeutralLink(), (), set(), [], set()):
+                with self.subTest(empty_a=empty_a, empty_b=empty_b):
+                    chain = empty_a >> empty_b
+                    self.assertIsInstance(chain, NeutralLink)
+                    chain = empty_b >> empty_a
+                    self.assertIsInstance(chain, NeutralLink)
+                    chain = empty_a >> empty_b >> empty_a >> empty_b
+                    self.assertIsInstance(chain, NeutralLink)
 
     def test_parallel(self):
         """Parallel link as `parent >> (child_a, child_b, ...)` and `(parent_a, parent_b, ...) >> child`"""
@@ -67,18 +102,3 @@ class LinkerGrammar(unittest.TestCase):
                 self.assertSequenceEqual(chain_b.elements[0].elements, (a, b))
                 chain_b_inv = c << (a, b)
                 self.assertSequenceEqual(chain_b.elements, chain_b_inv.elements)
-
-    def test_parallel_type(self):
-        """Parallel links preserving sequence type"""
-        chainlet1 = NamedChainlet('1')
-        chainlet2 = NamedChainlet('2')
-        chainlet3 = NamedChainlet('3')
-        for a, b, c in itertools.product((chainlet1, chainlet2, chainlet3), repeat=3):
-            for pack_type in (list, tuple, set):
-                with self.subTest(a=a, b=b, c=c, pack_type=pack_type):
-                    chain_a = a >> pack_type((b, c))
-                    self.assertSequenceEqual(chain_a.elements[1].elements, pack_type((b, c)))
-                    self.assertIsInstance(chain_a.elements[1].elements, pack_type)
-                    chain_b = pack_type((a, b)) >> c
-                    self.assertSequenceEqual(chain_b.elements[0].elements, pack_type((a, b)))
-                    self.assertIsInstance(chain_b.elements[0].elements, pack_type)

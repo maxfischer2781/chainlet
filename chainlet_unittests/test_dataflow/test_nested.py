@@ -1,7 +1,9 @@
 import itertools
 import unittest
 
-from chainlet_unittests.utility import Adder, produce, abort_return, abort_swallow, AbortEvery, ReturnEvery
+from chainlet.dataflow import either
+
+from chainlet_unittests.utility import Adder, produce, abort_swallow, AbortEvery, ReturnEvery
 
 
 class ChainNested(unittest.TestCase):
@@ -38,12 +40,17 @@ class ChainNested(unittest.TestCase):
                     list(chain_abort_all_swallow),
                     []
                 )
-                chain_abort_one_return = produce(initials) >> a >> (b >> abort_return(), c)
-                self.assertEqual(
-                    list(chain_abort_one_return),
-                    [[initial + a.value + b.value, initial + a.value + c.value] for initial in initials]
-                )
                 for every in (2, 3):
+                    chain_switch_nth = produce(initials) >> a >> either(AbortEvery(every) >> b, c)
+                    self.assertEqual(
+                        list(chain_switch_nth),
+                        [
+                            initial + a.value + b.value
+                            if (idx+1) % every else
+                            initial + a.value + c.value
+                            for idx, initial in enumerate(initials)
+                        ]
+                    )
                     chain_abort_nth_return = produce(initials) >> a >> (b >> AbortEvery(every), c)
                     self.assertEqual(
                         list(chain_abort_nth_return),

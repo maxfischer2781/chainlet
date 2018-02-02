@@ -1,7 +1,12 @@
 from __future__ import absolute_import, division, print_function
+import os
+import multiprocessing
+import threading
+
 import chainlet
 import chainlet.dataflow
 import chainlet.chainlink
+import chainlet.signals
 
 
 class NamedChainlet(chainlet.dataflow.NoOp):
@@ -15,7 +20,7 @@ class NamedChainlet(chainlet.dataflow.NoOp):
 
 class Adder(NamedChainlet):
     def __init__(self, value=2):
-        NamedChainlet.__init__(self, name='%+d' % value)
+        NamedChainlet.__init__(self, name='<%+d>' % value)
         self.value = value
 
     def chainlet_send(self, value=None):
@@ -34,6 +39,37 @@ class Buffer(chainlet.ChainLink):
         return '<%s>' % self.buffer
 
 
+class MultiprocessBuffer(Buffer):
+    def __init__(self):
+        super(MultiprocessBuffer, self).__init__()
+        self._queue = multiprocessing.Queue()
+        self._close_signal = os.urandom(16)
+        self._pid = os.getpid()
+        receiver = threading.Thread(target=self._recv)
+        receiver.daemon = True
+        receiver.start()
+
+    def _recv(self):
+        _close_signal = self._close_signal
+        _queue = self._queue
+        buffer = self.buffer
+        del self
+        while True:
+            value = _queue.get()
+            if value == _close_signal:
+                break
+            buffer.append(value)
+        _queue.close()
+
+    def chainlet_send(self, value=None):
+        self._queue.put(value)
+        return value
+
+    def __del__(self):
+        self._queue.put(self._close_signal)
+        self._queue.close()
+
+
 @chainlet.genlet(prime=False)
 def produce(iterable):
     """Produce values from an iterable for a chain"""
@@ -42,15 +78,9 @@ def produce(iterable):
 
 
 @chainlet.funclet
-def abort_return(value):
-    """Always return input by aborting the chain"""
-    raise chainlet.chainlink.StopTraversal(value)
-
-
-@chainlet.funclet
 def abort_swallow(value):
     """Always abort the chain without returning"""
-    raise chainlet.chainlink.StopTraversal
+    raise chainlet.signals.StopTraversal
 
 
 class AbortEvery(chainlet.ChainLink):
@@ -68,7 +98,7 @@ class AbortEvery(chainlet.ChainLink):
         self._count += 1
         if self._count % self.every:
             return value
-        raise chainlet.chainlink.StopTraversal
+        raise chainlet.signals.StopTraversal
 
 
 class ReturnEvery(chainlet.ChainLink):
@@ -85,6 +115,6 @@ class ReturnEvery(chainlet.ChainLink):
     def chainlet_send(self, value=None):
         if self._count % self.every:
             self._count += 1
-            raise chainlet.chainlink.StopTraversal
+            raise chainlet.signals.StopTraversal
         self._count += 1
-        raise chainlet.chainlink.StopTraversal(value)
+        return value

@@ -36,6 +36,7 @@ Any protolink that works on iterables supports two modes of operation:
 from __future__ import absolute_import, print_function
 import operator
 
+import chainlet.signals
 from . import chainlink
 from . import genlink
 from . import funclink
@@ -150,7 +151,7 @@ def filterlet(function=bool, iterable=None):
 def _filterlet(value=None, function=bool):
     if function(value):
         return value
-    raise chainlink.StopTraversal
+    raise chainlet.signals.StopTraversal
 
 
 @genlink.genlet

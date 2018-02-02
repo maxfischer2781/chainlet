@@ -6,10 +6,14 @@ import itertools
 import collections
 import numbers
 
+import chainlet.signals
 from . import chainlink
+from . import utility
+
+__all__ = ['NoOp', 'joinlet', 'forklet', 'MergeLink', 'either']
 
 
-class NoOp(chainlink.ChainLink):
+class NoOp(chainlink.NeutralLink):
     """
     A noop element that returns any input unchanged
 
@@ -20,9 +24,14 @@ class NoOp(chainlink.ChainLink):
     .. code:: python
 
         translate = parse_english >> (NoOp(), to_french, to_german)
+
+    :note: Unlike the :py:class:`~chainlink.NeutralLink`, this element is not optimized
+           away by linking.
     """
-    def chainlet_send(self, value=None):
-        return value
+    def __bool__(self):
+        return True
+
+    __nonzero__ = __bool__
 
 
 def joinlet(chainlet):
@@ -158,7 +167,7 @@ class MergeLink(chainlink.ChainLink):
         try:
             base_value = next(iter_values)
         except StopIteration:
-            raise chainlink.StopTraversal
+            raise chainlet.signals.StopTraversal
         sample_type = type(base_value)
         try:
             merger = self._cache_mapping[sample_type]
@@ -172,9 +181,65 @@ class MergeLink(chainlink.ChainLink):
                 return merger
         raise ValueError('No compatible merger for %s' % value_type)
 
+# add Count support for newer versions
 try:
     Counter = collections.Counter
 except AttributeError:
     pass
 else:
     MergeLink.default_merger.insert(1, (Counter, merge_numerical))
+
+
+class Either(chainlink.ChainLink):
+    """
+    Select the first successful chain from a number of choices
+
+    :param choices: chains to choose from
+    :type choices: iterable[chainlink.ChainLink]
+    :param default: default value to provide if no chain produces a result
+
+    For every :term:`data chunk`, the first chain from ``choices`` to
+    produce a result is chosen. Success is determined by not raising
+    :py:exc:`~chainlink.StopTraversal`; there is no special casing of
+    ``[]`` or :py:const:`None`.
+
+    A simple switch statement can be implemented as
+
+    .. code:: python
+
+        either(
+            condition_a >> instruction_a,
+            condition_b >> instruction_b,
+            condition_c >> instruction_c,
+            ...
+        )
+
+    .. note:: All ``choices`` must have the same behaviour with respect
+              to :term:`forking` and :term:`joining`.
+    """
+    NO_DEFAULT = utility.Sentinel('NO DEFAULT')
+
+    def __init__(self, *choices, **kwargs):
+        self.choices = tuple(choices)
+        self.default = kwargs.pop('default', self.NO_DEFAULT)
+        if len(set((choice.chain_fork, choice.chain_join) for choice in self.choices)) != 1:
+            raise ValueError('all choices must have consistent fork/join behaviour')
+        self.chain_fork = self.choices[0].chain_fork
+        self.chain_join = self.choices[0].chain_join
+
+    def chainlet_send(self, value=None):
+        for choice in self.choices:
+            try:
+                return choice.chainlet_send(value)
+            except chainlet.signals.StopTraversal:
+                continue
+        if self.default is not self.NO_DEFAULT:
+            return self.default
+        raise chainlet.signals.StopTraversal
+
+    def __repr__(self):
+        if self.default:
+            return 'either(%s, default=%r)' % (', '.join(repr(choice) for choice in self.choices), self.default)
+        return 'either(%s)' % ', '.join(repr(choice) for choice in self.choices)
+
+either = Either

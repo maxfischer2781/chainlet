@@ -26,6 +26,12 @@ Glossary
         For example, it can be an actual :term:`sequence`, an (in)finite :term:`generator`,
         or created piecewise via :py:meth:`~chainlet.ChainLink.send`.
 
+    stream slice
+        A portion of the :term:`data stream`, containing multiple adjacent :term:`data chunks <chunk>`.
+        Slices are the underlying unit of :term:`chunks <chunk>` passing through a :term:`chainlink`:
+        a slice may shrink or expand as elements remove or add items,
+        retaining the order of chunks.
+
     chainlet
         An atomic :term:`chainlink`.
         The most primitive elements capable of forming chains and bundles.

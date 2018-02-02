@@ -22,6 +22,12 @@ This example links elements to form a directed graph:
         d -> g
     }
 
+Basic Links
++++++++++++
+
+Linking is based on a few, fundamental primitives.
+Combining them allows for complex data flows from simple building blocks.
+
 Single Link - Pairs
 -------------------
 
@@ -83,8 +89,8 @@ The following chain is equivalent to ``chain_c``.
 :danger: Mixing ``<<`` and ``>>`` is generally a bad idea.
          The use of ``>>`` is suggested, as it conforms to public and private interface implementations.
 
-Forking and Joining Links
--------------------------
+Forking and Joining Links - Bundles
+-----------------------------------
 
 Any :term:`chainlink` can have an arbitrary number of parents and children.
 This allows :term:`forking` and :term:`joining` the :term:`data stream`.
@@ -129,7 +135,28 @@ This allows you to use comprehensions and calls to generate forks and joins dyna
         a -> "node(3)"
     }
 
+:note: A :py:func:`tuple`, :py:func:`list` or :py:func:`set` is not by itself a :term:`chainlink`.
+       It must be linked to an existing :term:`chainlink` to trigger a conversion.
+
+Advanced Linking Rules
+++++++++++++++++++++++
+
+Linking only guarantees element identity and a specific *data flow* graph.
+This reflects that some dataflows which can be realised in multiple ways.
+Several advanced rules allow :py:mod:`chainlet` to superseed the default link process.
+
+Link Operator Reflection
+------------------------
+
+The ``>>`` and ``<<`` operators are subject to the regular operator reflection of Python [#reflectop]_.
+In addition, there is an underlying linker which allows for similar behaviour beyond class hierarchies.
+
 .. [#linkop] These are the ``__rshift__`` and ``__lshift__`` operators.
              Overwriting these operators on objects changes their linking behaviour.
 
 .. [#typefork] There may be additional implications to using different types in the future.
+
+.. [#reflectop] If the right operand’s type is a subclass of the left operand’s type
+                and that subclass provides the reflected method for the operation,
+                this method will be called before the left operand’s non-reflected method.
+                This behavior allows subclasses to override their ancestors’ operations.
