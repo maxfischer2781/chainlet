@@ -3,6 +3,8 @@ import unittest
 import time
 
 import chainlet
+import chainlet.primitives.bundle
+import chainlet.primitives.chain
 from chainlet.dataflow import NoOp, MergeLink
 
 from chainlet_unittests.utility import Adder
@@ -16,7 +18,7 @@ def sleep(value, seconds):
 
 class PrimitiveTestCases(object):
     class ConcurrentChain(unittest.TestCase):
-        chain_type = chainlet.chainlink.Chain
+        chain_type = chainlet.primitives.chain.Chain
         converter = None
 
         def test_concurrent(self):
@@ -40,7 +42,7 @@ class PrimitiveTestCases(object):
             self.assertLess(end_time - start_time, 0.5)
 
     class ConcurrentBundle(unittest.TestCase):
-        bundle_type = chainlet.chainlink.Bundle
+        bundle_type = chainlet.primitives.bundle.Bundle
         converter = None
 
         def test_concurrent(self):

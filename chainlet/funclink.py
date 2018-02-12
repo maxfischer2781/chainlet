@@ -35,8 +35,8 @@ applying a decorator:
 from __future__ import division, absolute_import
 import itertools
 
-import chainlet.wrapper
-from . import chainlink
+from .primitives.link import ChainLink
+from . import wrapper
 
 
 class PartialSlave(object):
@@ -71,7 +71,7 @@ class PartialSlave(object):
         self.func, self.args, self.keywords = state
 
 
-class FunctionLink(chainlet.wrapper.WrapperMixin, chainlink.ChainLink):
+class FunctionLink(wrapper.WrapperMixin, ChainLink):
     """
     Wrapper making a function act like a ChainLink
 

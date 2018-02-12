@@ -6,7 +6,9 @@ try:
 except NameError:
     from functools import reduce as _reduce
 
-from chainlet.chainlink import FlatChain, Bundle, NeutralLink
+from chainlet.primitives.neutral import NeutralLink
+from chainlet.primitives.bundle import Bundle
+from chainlet.primitives.chain import FlatChain
 
 from chainlet_unittests.utility import NamedChainlet
 

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from .__about__ import __version__
-from .chainlink import ChainLink
+from .primitives.link import ChainLink
 from .signals import StopTraversal
 from .funclink import funclet
 from .genlink import genlet

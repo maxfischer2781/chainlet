@@ -6,14 +6,15 @@ import itertools
 import collections
 import numbers
 
-import chainlet.signals
-from . import chainlink
+from .primitives.link import ChainLink
+from .primitives.neutral import NeutralLink
+from .signals import StopTraversal
 from . import utility
 
 __all__ = ['NoOp', 'joinlet', 'forklet', 'MergeLink', 'either']
 
 
-class NoOp(chainlink.NeutralLink):
+class NoOp(NeutralLink):
     """
     A noop element that returns any input unchanged
 
@@ -39,9 +40,9 @@ def joinlet(chainlet):
     Decorator to mark a chainlet as joining
 
     :param chainlet: a chainlet to mark as joining
-    :type chainlet: chainlink.ChainLink
+    :type chainlet: :py:class:`~.ChainLink`
     :return: the chainlet modified inplace
-    :rtype: chainlink.ChainLink
+    :rtype: :py:class:`~.ChainLink`
 
     Applying this decorator is equivalent to setting :py:attr:`~chainlet.chainlink.ChainLink.chain_join`
     on ``chainlet``:
@@ -69,19 +70,19 @@ def forklet(chainlet):
     Decorator to mark a chainlet as forking
 
     :param chainlet: a chainlet to mark as forking
-    :type chainlet: chainlink.ChainLink
+    :type chainlet: :py:class:`~.ChainLink`
     :return: the chainlet modified inplace
-    :rtype: chainlink.ChainLink
+    :rtype: :py:class:`~.ChainLink`
 
     See the note on :py:func:`joinlet` for general features.
-    This decorator sets :py:attr:`~chainlet.chainlink.ChainLink.chain_fork`, and implementations *must* provide an
+    This decorator sets :py:attr:`~.ChainLink.chain_fork`, and implementations *must* provide an
     iterable.
 
     .. code:: python
 
         @forklet
         @funclet
-        def friends(value):
+        def friends(value, persons):
             "Split operations for every friend of a person"
             return (person for person in persons if person.is_friend(value))
     """
@@ -120,7 +121,7 @@ def merge_mappings(base_value, iter_values):
     return base_value
 
 
-class MergeLink(chainlink.ChainLink):
+class MergeLink(ChainLink):
     """
     Element that joins the data flow by merging individual data chunks
 
@@ -167,7 +168,7 @@ class MergeLink(chainlink.ChainLink):
         try:
             base_value = next(iter_values)
         except StopIteration:
-            raise chainlet.signals.StopTraversal
+            raise StopTraversal
         sample_type = type(base_value)
         try:
             merger = self._cache_mapping[sample_type]
@@ -190,17 +191,17 @@ else:
     MergeLink.default_merger.insert(1, (Counter, merge_numerical))
 
 
-class Either(chainlink.ChainLink):
+class Either(ChainLink):
     """
     Select the first successful chain from a number of choices
 
     :param choices: chains to choose from
-    :type choices: iterable[chainlink.ChainLink]
+    :type choices: iterable[:py:class:`~.ChainLink`]
     :param default: default value to provide if no chain produces a result
 
     For every :term:`data chunk`, the first chain from ``choices`` to
     produce a result is chosen. Success is determined by not raising
-    :py:exc:`~chainlink.StopTraversal`; there is no special casing of
+    :py:exc:`~.StopTraversal`; there is no special casing of
     ``[]`` or :py:const:`None`.
 
     A simple switch statement can be implemented as
@@ -231,11 +232,11 @@ class Either(chainlink.ChainLink):
         for choice in self.choices:
             try:
                 return choice.chainlet_send(value)
-            except chainlet.signals.StopTraversal:
+            except StopTraversal:
                 continue
         if self.default is not self.NO_DEFAULT:
             return self.default
-        raise chainlet.signals.StopTraversal
+        raise StopTraversal
 
     def __repr__(self):
         if self.default:

@@ -6,6 +6,7 @@ import threading
 import chainlet
 import chainlet.dataflow
 import chainlet.chainlink
+import chainlet.primitives.link
 import chainlet.signals
 
 
@@ -27,7 +28,7 @@ class Adder(NamedChainlet):
         return value + self.value
 
 
-class Buffer(chainlet.ChainLink):
+class Buffer(chainlet.primitives.link.ChainLink):
     def __init__(self):
         self.buffer = []
 
@@ -83,7 +84,7 @@ def abort_swallow(value):
     raise chainlet.signals.StopTraversal
 
 
-class AbortEvery(chainlet.ChainLink):
+class AbortEvery(chainlet.primitives.link.ChainLink):
     """
     Abort every n'th traversal of the chain
 
@@ -101,7 +102,7 @@ class AbortEvery(chainlet.ChainLink):
         raise chainlet.signals.StopTraversal
 
 
-class ReturnEvery(chainlet.ChainLink):
+class ReturnEvery(chainlet.primitives.link.ChainLink):
     """
     Abort-return every n'th traversal of the chain
 

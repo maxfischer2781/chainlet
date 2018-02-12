@@ -3,7 +3,8 @@ import multiprocessing
 import collections
 import itertools
 
-from .. import chainlink
+from ..primitives import bundle
+from ..primitives import chain
 from .. import signals
 from ..chainsend import eager_send
 
@@ -231,7 +232,7 @@ class LocalExecutor(object):
 DEFAULT_EXECUTOR = LocalExecutor(-1, 'chainlet_local')
 
 
-class ConcurrentBundle(chainlink.Bundle):
+class ConcurrentBundle(bundle.Bundle):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
@@ -259,7 +260,7 @@ class ConcurrentBundle(chainlink.Bundle):
             ])
 
 
-class ConcurrentChain(chainlink.Chain):
+class ConcurrentChain(chain.Chain):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
 
@@ -288,20 +289,20 @@ class ConcurrentChain(chainlink.Chain):
         for element in self.elements:
             if element.chain_join:
                 if buffer:
-                    stripes.append(chainlink.Chain(buffer))
+                    stripes.append(chain.Chain(buffer))
                     buffer = []
                 stripes.append(element)
             elif element.chain_fork:
                 if buffer:
                     buffer.append(element)
-                    stripes.append(chainlink.Chain(buffer))
+                    stripes.append(chain.Chain(buffer))
                     buffer = []
                 else:
                     stripes.append(element)
             else:
                 buffer.append(element)
         if buffer:
-            stripes.append(chainlink.Chain(buffer))
+            stripes.append(chain.Chain(buffer))
         self._stripes = stripes
 
     def chainlet_send(self, value=None):
