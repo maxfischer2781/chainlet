@@ -35,3 +35,14 @@ class ChainPrimitives(unittest.TestCase):
                     expected = [initial + a.value + b.value, initial + a.value + c.value]
                     chain_a = a >> (b, c)
                     self.assertEqual(chain_a.send(initial), expected)
+
+    def test_generator(self):
+        """Pull generator link chain as `(a for a in values) >> child >> ...`"""
+        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        initials = (0, 15, -15, -1E6, +1E6)
+        for chain in itertools.product(elements, repeat=3):
+            with self.subTest(chain=chain):
+                expected = [initial + sum(element.value for element in chain) for initial in initials]
+                a, b, c = chain
+                chain_a = (val for val in initials) >> a >> b >> c
+                self.assertEqual(list(chain_a), expected)

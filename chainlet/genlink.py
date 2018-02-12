@@ -237,3 +237,33 @@ def genlet(generator_function=None, prime=True):
     elif not callable(generator_function):
         return GeneratorLink.wraplet(prime=generator_function)
     return GeneratorLink.wraplet(prime=prime)(generator_function)
+
+
+def link_generator(element):
+    """
+    Convert active generators to a :py:class:`~.GeneratorLink` instance
+
+    This converter automatically constructs a :py:class:`~.GeneratorLink`
+    from any :term:`generator iterator` (not a :term:`generator function <generator>`).
+    The following two lines produce the same chain:
+
+    .. code:: python
+
+        a >> generator >> e
+        a >> GeneratorLink(generator) >> e
+
+    Note that the source of the generator is inconsequential.
+    For example, a :term:`generator expression` can be used to provide values:
+
+    .. code:: python
+
+        ((value, value**2) for value in range(500)) >> printlet(flatten=True)
+
+    The :term:`generator iterator` is *not* primed when binding.
+    This makes it suitable for producing values, but not for transforming values.
+    """
+    if isinstance(element, types.GeneratorType):
+        return GeneratorLink(element, prime=False)
+    return NotImplemented
+
+ChainLink.chain_types.add_converter(link_generator)
