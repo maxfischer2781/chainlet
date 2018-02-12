@@ -2,6 +2,18 @@
 chainlet Changelog
 ++++++++++++++++++
 
+unreleased
+----------
+
+    **New Features**
+
+        * Generator iterators can be used directly during linking.
+
+v1.3.1
+------
+
+    **Installer Hotfix Release**
+
 v1.3.0
 ------
 
