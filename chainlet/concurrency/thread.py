@@ -14,6 +14,7 @@ import threading
 import time
 import atexit
 
+from ..primitives import link
 from ..primitives import linker
 
 try:
@@ -140,8 +141,8 @@ def convert(element):
     :return: a threaded version of ``element`` if possible, or the element itself
     """
     element = linker.LinkPrimitives().convert(element)
-    if isinstance(element, linker.LinkPrimitives.base_bundle_type):
+    if isinstance(element, link.ChainLink.chain_types.base_bundle_type):
         return ThreadLinkPrimitives.base_bundle_type(element.elements)
-    elif isinstance(element, linker.LinkPrimitives.base_chain_type):
+    elif isinstance(element, link.ChainLink.chain_types.base_chain_type):
         return ThreadLinkPrimitives.base_chain_type(element.elements)
     return element

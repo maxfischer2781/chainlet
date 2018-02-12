@@ -1,5 +1,6 @@
 from .. import signals
 from ..chainsend import lazy_send
+from .link import ChainLink
 from .compound import CompoundLink
 
 
@@ -33,3 +34,12 @@ class Bundle(CompoundLink):
 
     def __repr__(self):
         return repr(self.elements)
+
+
+def bundle_sequences(element):
+    if isinstance(element, (tuple, list, set)):
+        return Bundle(element)
+    return NotImplemented
+
+ChainLink.chain_types.add_converter(bundle_sequences)
+ChainLink.chain_types.base_bundle_type = Bundle

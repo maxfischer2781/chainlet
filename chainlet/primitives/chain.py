@@ -150,3 +150,6 @@ class FlatChain(Chain):
             # whoever catches it can extract a potential early return value
             value = element.chainlet_send(value)
         return value
+
+ChainLink.chain_types.base_chain_type = Chain
+ChainLink.chain_types.flat_chain_type = FlatChain
