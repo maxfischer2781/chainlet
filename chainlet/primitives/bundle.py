@@ -37,6 +37,19 @@ class Bundle(CompoundLink):
 
 
 def bundle_sequences(element):
+    """
+    Convert sequence types to bundles
+
+    This converter automatically constructs a :py:class:`~.Bundle`
+    from any :py:class:`tuple`, :py:class:`list` or :py:class:`set`
+    encountered during linking.
+    The following two lines produce the same chain:
+
+    .. code:: python
+
+        a >> [b, c, d] >> e
+        a >> Bundle((b, c, d)) >> e
+    """
     if isinstance(element, (tuple, list, set)):
         return Bundle(element)
     return NotImplemented

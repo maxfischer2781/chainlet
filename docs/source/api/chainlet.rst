@@ -13,6 +13,7 @@ Subpackages
 
     chainlet.compat
     chainlet.concurrency
+    chainlet.primitives
 
 Submodules
 ----------
