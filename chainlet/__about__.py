@@ -3,6 +3,34 @@
 chainlet
 ++++++++
 
+.. image:: https://readthedocs.org/projects/chainlet/badge/?version=latest
+    :target: http://chainlet.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+.. image:: https://img.shields.io/pypi/v/chainlet.svg
+    :alt: Available on PyPI
+    :target: https://pypi.python.org/pypi/chainlet/
+
+.. image:: https://img.shields.io/github/license/maxfischer2781/chainlet.svg
+    :alt: License
+    :target: https://github.com/maxfischer2781/chainlet/blob/master/LICENSE
+
+.. image:: https://img.shields.io/github/commits-since/maxfischer2781/chainlet/v1.3.1.svg
+    :alt: Repository
+    :target: https://github.com/maxfischer2781/chainlet/tree/master
+
+.. image:: https://travis-ci.org/maxfischer2781/chainlet.svg?branch=master
+    :target: https://travis-ci.org/maxfischer2781/chainlet
+    :alt: Build Status
+
+.. image:: https://landscape.io/github/maxfischer2781/chainlet/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/maxfischer2781/chainlet/master
+    :alt: Code Health
+
+.. image:: https://codecov.io/gh/maxfischer2781/chainlet/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/maxfischer2781/chainlet
+    :alt: Test Coverage
+
 The ``chainlet`` library offers a lightweight model to create processing pipelines from
 generators, coroutines, functions and custom objects.
 Instead of requiring you to nest code or insert hooks, ``chainlet`` offers a concise, intuitive binding syntax:
