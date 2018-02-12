@@ -40,7 +40,8 @@ from __future__ import division, absolute_import
 import sys
 import types
 
-from . import chainlink, wrapper
+from .primitives.link import ChainLink
+from . import wrapper
 
 
 def _unpickle_stashed_generator(generator_function, args, kwargs):
@@ -160,7 +161,7 @@ class StashedGenerator(object):  # pylint:disable=too-many-instance-attributes
         return '%s(%s, *%s, **%s)' % (type(self).__name__, self._generator_function, self._args, self._kwargs)
 
 
-class GeneratorLink(wrapper.WrapperMixin, chainlink.ChainLink):
+class GeneratorLink(wrapper.WrapperMixin, ChainLink):
     """
     Wrapper making a generator act like a ChainLink
 

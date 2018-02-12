@@ -6,6 +6,7 @@ import sys
 import traceback
 
 import chainlet
+import chainlet.primitives.link
 
 
 def chainlet_excepthook(etype, evalue, tb):
@@ -21,7 +22,7 @@ def chainlet_print_traceback(tb, file=None):
     traceback.print_tb(tb, limit=1, file=file)
     frame_name = tb.tb_frame.f_code.co_name
     frame_locals = dict(tb.tb_frame.f_locals)
-    if isinstance(frame_locals.get('self'), chainlet.ChainLink):
+    if isinstance(frame_locals.get('self'), chainlet.primitives.link.ChainLink):
         self = frame_locals['self']
         cls = type(self)
         print('  for chainlet "%s:%s"' % (cls.__module__, cls.__name__), file=file, end='')

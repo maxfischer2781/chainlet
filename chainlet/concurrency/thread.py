@@ -13,12 +13,14 @@ from __future__ import print_function
 import threading
 import time
 import atexit
+
+from ..primitives import linker
+
 try:
     import Queue as queue
 except ImportError:
     import queue
 
-from .. import chainlink
 from .base import StoredFuture, CPU_CONCURRENCY, LocalExecutor, ConcurrentBundle, ConcurrentChain
 
 
@@ -105,7 +107,7 @@ class ThreadPoolExecutor(LocalExecutor):
 DEFAULT_EXECUTOR = ThreadPoolExecutor(CPU_CONCURRENCY * 5, 'chainlet_thread')
 
 
-class ThreadLinkPrimitives(chainlink.LinkPrimitives):
+class ThreadLinkPrimitives(linker.LinkPrimitives):
     pass
 
 
@@ -137,9 +139,9 @@ def convert(element):
     :param element: the chainlink to convert
     :return: a threaded version of ``element`` if possible, or the element itself
     """
-    element = chainlink.LinkPrimitives().convert(element)
-    if isinstance(element, chainlink.LinkPrimitives.base_bundle_type):
+    element = linker.LinkPrimitives().convert(element)
+    if isinstance(element, linker.LinkPrimitives.base_bundle_type):
         return ThreadLinkPrimitives.base_bundle_type(element.elements)
-    elif isinstance(element, chainlink.LinkPrimitives.base_chain_type):
+    elif isinstance(element, linker.LinkPrimitives.base_chain_type):
         return ThreadLinkPrimitives.base_chain_type(element.elements)
     return element
