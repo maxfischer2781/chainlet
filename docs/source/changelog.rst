@@ -9,6 +9,12 @@ unreleased
 
         * Generator iterators can be used directly during linking.
 
+        * Using any chainlet in a ``with`` statement automatically closes it at the end of the context.
+
+    **Minor Changes**
+
+        * A ``chainlet.close`` is now propagated by bundles and chains to their elements.
+
 v1.3.1
 ------
 
