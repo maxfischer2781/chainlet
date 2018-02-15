@@ -207,8 +207,15 @@ class ChainLink(object):
     throw = _throw_method
 
     def close(self):
-        """Close this element, freeing resources and blocking further interactions"""
+        """Close this element, freeing resources and possibly blocking further interactions"""
         pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
 
 ChainLink.chain_types.base_link_type = ChainLink
