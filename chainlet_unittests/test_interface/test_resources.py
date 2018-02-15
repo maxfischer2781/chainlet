@@ -1,7 +1,10 @@
 from __future__ import absolute_import, division
 import unittest
 
+import chainlet
 from chainlet.primitives import link, neutral, bundle
+
+from chainlet_unittests.utility import Adder
 
 
 class ClosableLink(link.ChainLink):
@@ -10,6 +13,13 @@ class ClosableLink(link.ChainLink):
 
     def close(self):
         self.closed = True
+
+
+@chainlet.genlet
+def pingpong():
+    value = yield
+    while True:
+        value = yield value
 
 
 class TestClose(unittest.TestCase):
@@ -65,6 +75,14 @@ class TestClose(unittest.TestCase):
         for linklet in get_elements(chain_bundle):
             self.assertTrue(linklet.close)
 
+    def test_generator(self):
+        generator_chain = Adder(1) >> pingpong() >> Adder(1)
+        for val in (-10, 0, 1, 3):
+            self.assertEqual(generator_chain.send(val), val + 2)
+        generator_chain.close()
+        with self.assertRaises(StopIteration):
+            generator_chain.send(1)
+
 
 class TestContext(unittest.TestCase):
     """Context chainlets to manage resources"""
@@ -114,3 +132,10 @@ class TestContext(unittest.TestCase):
         chain_bundle.close()
         for linklet in get_elements(chain_bundle):
             self.assertTrue(linklet.close)
+
+    def test_generator(self):
+        with Adder(1) >> pingpong() >> Adder(1) as generator_chain:
+            for val in (-10, 0, 1, 3):
+                self.assertEqual(generator_chain.send(val), val + 2)
+        with self.assertRaises(StopIteration):
+            generator_chain.send(1)
