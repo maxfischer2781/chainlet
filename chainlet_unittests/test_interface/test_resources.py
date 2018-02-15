@@ -64,3 +64,53 @@ class TestClose(unittest.TestCase):
         chain_bundle.close()
         for linklet in get_elements(chain_bundle):
             self.assertTrue(linklet.close)
+
+
+class TestContext(unittest.TestCase):
+    """Context chainlets to manage resources"""
+    def test_link(self):
+        """with basic links without side effects"""
+        for link_class in link.ChainLink, neutral.NeutralLink:
+            with self.subTest(link=link_class):
+                with link_class() as link_instance:
+                    link_instance.close()
+                link_instance.close()
+
+    def test_chain(self):
+        """with chain with children"""
+        with ClosableLink() >> ClosableLink() >> ClosableLink() >> ClosableLink() as pure_chain:
+            for linklet in pure_chain.elements:
+                self.assertFalse(linklet.closed)
+        for linklet in pure_chain.elements:
+            self.assertTrue(linklet.close)
+        pure_chain.close()
+        for linklet in pure_chain.elements:
+            self.assertTrue(linklet.close)
+
+    def test_bundle(self):
+        """with bundle with children"""
+        with bundle.Bundle((ClosableLink(), ClosableLink(), ClosableLink(), ClosableLink())) as pure_bundle:
+            for linklet in pure_bundle.elements:
+                self.assertFalse(linklet.closed)
+        for linklet in pure_bundle.elements:
+            self.assertTrue(linklet.close)
+        pure_bundle.close()
+        for linklet in pure_bundle.elements:
+            self.assertTrue(linklet.close)
+
+    def test_bundle_chain(self):
+        """with bested chain and bundle with children"""
+        def get_elements(test_chain):
+            yield test_chain[0]
+            yield test_chain[1][0]
+            yield test_chain[1][1][0]
+            yield test_chain[1][1][1]
+            yield test_chain[2]
+        with ClosableLink() >> (ClosableLink(), ClosableLink() >> ClosableLink()) >> ClosableLink() as chain_bundle:
+            for linklet in get_elements(chain_bundle):
+                self.assertFalse(linklet.closed)
+        for linklet in get_elements(chain_bundle):
+            self.assertTrue(linklet.close)
+        chain_bundle.close()
+        for linklet in get_elements(chain_bundle):
+            self.assertTrue(linklet.close)
