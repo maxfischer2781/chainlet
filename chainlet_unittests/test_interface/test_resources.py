@@ -1,15 +1,7 @@
 from __future__ import absolute_import, division
 import unittest
-import random
-import copy
-import functools
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 from chainlet.primitives import link, neutral, bundle
-import chainlet.funclink
 
 
 class ClosableLink(link.ChainLink):
