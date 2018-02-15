@@ -58,3 +58,7 @@ class CompoundLink(ChainLink):
 
     def chainlet_send(self, value=None):
         raise NotImplementedError
+
+    def close(self):
+        for element in self.elements:
+            element.close()
