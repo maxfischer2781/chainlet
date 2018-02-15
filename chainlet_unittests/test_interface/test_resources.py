@@ -20,6 +20,7 @@ class TestClose(unittest.TestCase):
             with self.subTest(link=link_class):
                 link_instance = link_class()
                 link_instance.close()
+                link_instance.close()
 
     def test_chain(self):
         """close chain with children"""
@@ -29,12 +30,18 @@ class TestClose(unittest.TestCase):
         pure_chain.close()
         for linklet in pure_chain.elements:
             self.assertTrue(linklet.close)
+        pure_chain.close()
+        for linklet in pure_chain.elements:
+            self.assertTrue(linklet.close)
 
     def test_bundle(self):
         """close bundle with children"""
         pure_bundle = bundle.Bundle((ClosableLink(), ClosableLink(), ClosableLink(), ClosableLink()))
         for linklet in pure_bundle.elements:
             self.assertFalse(linklet.closed)
+        pure_bundle.close()
+        for linklet in pure_bundle.elements:
+            self.assertTrue(linklet.close)
         pure_bundle.close()
         for linklet in pure_bundle.elements:
             self.assertTrue(linklet.close)
@@ -51,6 +58,9 @@ class TestClose(unittest.TestCase):
             yield test_chain[2]
         for linklet in get_elements(chain_bundle):
             self.assertFalse(linklet.closed)
+        chain_bundle.close()
+        for linklet in get_elements(chain_bundle):
+            self.assertTrue(linklet.close)
         chain_bundle.close()
         for linklet in get_elements(chain_bundle):
             self.assertTrue(linklet.close)
