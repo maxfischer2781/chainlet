@@ -31,6 +31,8 @@ class CompoundLink(ChainLink):
 
         Whether the link contains any elements.
     """
+    __slots__ = ('elements',)
+
     def __init__(self, elements):
         self.elements = tuple(elements)
         super(CompoundLink, self).__init__()

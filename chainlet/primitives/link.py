@@ -113,6 +113,7 @@ class ChainLink(object):
     chain_join = False
     #: whether this element produces several data chunks at once
     chain_fork = False
+    __slots__ = ()
 
     def _link(self, parent, child):
         """Link the chainlinks parent to child"""
