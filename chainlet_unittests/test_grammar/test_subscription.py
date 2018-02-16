@@ -9,7 +9,7 @@ from chainlet_unittests.utility import Adder
 class ChainSubscription(unittest.TestCase):
     def test_pair(self):
         """Subscribe chain[i:j:k] for `a >> b`"""
-        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        elements = [Adder(val) for val in (0, -2, -1E6)]
         for elements in itertools.product(elements, repeat=2):
             with self.subTest(elements=elements):
                 a, b = elements
@@ -20,7 +20,7 @@ class ChainSubscription(unittest.TestCase):
 
     def test_flatchain(self):
         """Subscribe chain[i:j:k] for `a >> b >> c ...`"""
-        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        elements = [Adder(val) for val in (0, -2, -1E6)]
         for elements in itertools.product(elements, repeat=5):
             with self.subTest(elements=elements):
                 a, b, c, d, e = elements
@@ -31,7 +31,7 @@ class ChainSubscription(unittest.TestCase):
 
     def test_fork(self):
         """Subscribe chain[i:j:k] for `a >> (b, c) >> d ...`"""
-        elements = [Adder(val) for val in (0, -2, 2, 1E6, -1E6)]
+        elements = [Adder(val) for val in (0, -2, -1E6)]
         for elements in itertools.product(elements, repeat=5):
             with self.subTest(elements=elements):
                 a, b, c, d, e = elements
