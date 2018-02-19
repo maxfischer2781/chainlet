@@ -5,6 +5,12 @@ import collections
 import math
 
 
+ANSI_RED = "\033[31;1m"
+ANSI_GREEN = "\033[32;1m"
+ANSI_BLUE = "\033[34;1m"
+ANSI_RESET = "\033[0m"
+
+
 def get_times():
     """Return a tuple of (user, system, elapsed)"""
     times = os.times()
@@ -36,23 +42,45 @@ class TimingTextTestResult(unittest.TextTestResult):
         self._timings = {}  # test => timing
 
     def startTest(self, test):
+        self.stream.writeln("---")
         super(TimingTextTestResult, self).startTest(test)
         self._timings[test] = [get_times()]
 
-    def addSuccess(self, test):
-        stop_times = get_times()
-        self._timings[test].append(stop_times)
-        super(unittest.TextTestResult, self).addSuccess(test)
+    def _report_test(self, test, long_message, short_message, ansi_color):
         if self.showAll:
-            self.stream.writeln("ok\r\t\t\t\t\t\t\t\t\t\t\t\t(%s)" % format_times(self._timings[test][0], stop_times))
+            self.stream.writeln("%s%s%s\n  %s" % (
+                ansi_color, long_message, ANSI_RESET, format_times(*self._timings[test][:2])
+            ))
         elif self.dots:
-            self.stream.write('.')
+            self.stream.write('%s%s%s' % (ansi_color, short_message, ANSI_RESET))
             self.stream.flush()
+
+    def addSuccess(self, test):
+        self._timings[test].append(get_times())
+        super(unittest.TextTestResult, self).addSuccess(test)
+        self._report_test(test, long_message='OK', short_message='.', ansi_color=ANSI_GREEN)
+
+    def addError(self, test, err):
+        self._timings[test].append(get_times())
+        super(unittest.TextTestResult, self).addSuccess(test)
+        self._report_test(test, long_message='ERROR', short_message='E', ansi_color=ANSI_RED)
+
+    def addFailure(self, test, err):
+        self._timings[test].append(get_times())
+        super(unittest.TextTestResult, self).addSuccess(test)
+        self._report_test(test, long_message='FAIL', short_message='F', ansi_color=ANSI_RED)
+
+    def addSkip(self, test, reason):
+        self._timings[test].append(get_times())
+        super(unittest.TextTestResult, self).addSuccess(test)
+        self._report_test(test, long_message="skipped [%s]" % reason, short_message='s', ansi_color=ANSI_BLUE)
 
     def stopTestRun(self):
         durations = sorted(times[1][2] - times[0][2] for times in self._timings.values() if len(times) == 2)
         all_count, base = len(durations), 2
         max_exp, min_exp = int(2 * math.log(10, base)), int(-6 * math.log(10, base))
+        if not hasattr(collections, 'Counter'):
+            return
         bins = collections.Counter(round(math.log(val, base)) if val else -999 for val in durations)
         mean = sum(dur for dur in durations if dur > 1E-7) / sum(dur > 1E-7 for dur in durations)
         mean_bin = round(math.log(mean, base))
