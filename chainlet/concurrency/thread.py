@@ -34,10 +34,11 @@ class ThreadPoolExecutor(LocalExecutor):
     :param identifier: base identifier for all workers
     :type identifier: str
     """
-    _min_workers = max(CPU_CONCURRENCY, 2)
+    __slots__ = ('_workers', '_queue', '_min_workers')
 
     def __init__(self, max_workers, identifier=''):
         super(ThreadPoolExecutor, self).__init__(max_workers=max_workers, identifier=identifier)
+        self._min_workers = max(CPU_CONCURRENCY, 2)
         self._workers = set()
         self._queue = queue.Queue()
         self._ensure_worker()
@@ -115,6 +116,7 @@ class ThreadLinkPrimitives(linker.LinkPrimitives):
 class ThreadBundle(ConcurrentBundle):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
+    __slots__ = ()
 
     def __repr__(self):
         return 'threads(%s)' % super(ThreadBundle, self).__repr__()
@@ -123,6 +125,7 @@ class ThreadBundle(ConcurrentBundle):
 class ThreadChain(ConcurrentChain):
     chain_types = ThreadLinkPrimitives()
     executor = DEFAULT_EXECUTOR
+    __slots__ = ()
 
     def __repr__(self):
         return 'threads(%s)' % super(ThreadChain, self).__repr__()

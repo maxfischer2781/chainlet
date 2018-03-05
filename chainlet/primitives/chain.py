@@ -35,8 +35,7 @@ class Chain(CompoundLink):
            The rules for splitting chains still apply, though the actual chain elements
            may differ from the provided ones.
     """
-    chain_join = False
-    chain_fork = False
+    __slots__ = ('chain_join', 'chain_fork')
 
     def __new__(cls, elements):
         if not any(element.chain_fork or element.chain_join for element in cls._flatten(elements)):
@@ -48,6 +47,9 @@ class Chain(CompoundLink):
         if elements:
             self.chain_fork = self._chain_forks(elements)
             self.chain_join = elements[0].chain_join
+        else:
+            self.chain_fork = False
+            self.chain_join = False
 
     @classmethod
     def _flatten(cls, elements):

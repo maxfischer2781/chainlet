@@ -212,7 +212,7 @@ class LocalExecutor(object):
     :param identifier: base identifier for all workers
     :type identifier: str
     """
-    _min_workers = max(CPU_CONCURRENCY, 2)
+    __slots__ = ('identifier', '_max_workers')
 
     def __init__(self, max_workers, identifier=''):
         self.identifier = identifier or ('%s_%d' % (self.__class__.__name__, id(self)))
@@ -244,6 +244,7 @@ class ConcurrentBundle(bundle.Bundle):
     Concurrent bundles implement element concurrency:
     the same data is processed concurrently by multiple elements.
     """
+    __slots__ = ()
     executor = DEFAULT_EXECUTOR
 
     def chainlet_send(self, value=None):
@@ -275,6 +276,7 @@ class ConcurrentChain(chain.Chain):
     :note: A :py:class:`ConcurrentChain` will *always* :term:`join`
            and :term:`fork` to handle all data.
     """
+    __slots__ = ('_stripes',)
     executor = DEFAULT_EXECUTOR
 
     def __init__(self, elements):

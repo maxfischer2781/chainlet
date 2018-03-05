@@ -40,6 +40,8 @@ class WrapperMixin(object):
     Additionally, subclasses provide the :py:meth:`~.wraplet` to create factories of wrappers.
     This requires :py:meth:`~.__init_slave__` to be defined.
     """
+    __slots__ = ('__wrapped__',)
+
     def __init__(self, slave):
         super(WrapperMixin, self).__init__()
         self.__wrapped__ = slave
@@ -53,6 +55,13 @@ class WrapperMixin(object):
     @property
     def slave(self):
         return self.__wrapped__
+
+    def __getstate__(self):
+        return dict(
+            (attr, getattr(self, attr))
+            for attr in ('__wrapped__', 'chain_fork', 'chain_join')
+            if hasattr(self, attr)
+        )
 
     def __repr__(self):
         return '<%s wrapper %s.%s at %x>' % (

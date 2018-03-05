@@ -8,13 +8,15 @@ class Bundle(CompoundLink):
     """
     A group of chainlets that concurrently process each :term:`data chunk`
     """
-    chain_join = False
     chain_fork = True
+    __slots__ = ('chain_join',)
 
     def __init__(self, elements):
         super(Bundle, self).__init__(elements)
         if self.elements:
             self.chain_join = any(element.chain_join for element in self.elements)
+        else:
+            self.chain_join = False
 
     def chainlet_send(self, value=None):
         if self.chain_join:

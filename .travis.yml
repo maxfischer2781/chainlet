@@ -26,6 +26,6 @@ before_script:
   - export COVERAGE_PROCESS_START=$(pwd)/.coveragerc
   - echo "export PYTHONHASHSEED=${PYTHONHASHSEED}"
 script:
-  - coverage run setup.py test
+  - coverage run setup.py test --test-runner chainlet_unittests.timing_test:TimingTextTestRunner
 after_success:
   - coverage report && codecov

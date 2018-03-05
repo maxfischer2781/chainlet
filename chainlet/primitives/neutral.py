@@ -17,6 +17,8 @@ class NeutralLink(ChainLink):
     :note: A :py:class:`~.NeutralLink` *does* have an effect in a :term:`bundle`.
            It creates an additional :term:`branch` which passes on data unchanged.
     """
+    __slots__ = ()
+
     def chainlet_send(self, value=None):
         return value
 
