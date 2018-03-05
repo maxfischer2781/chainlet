@@ -39,6 +39,7 @@ chainlet - blocks for processing chains
     :maxdepth: 1
     :caption: Documentation Topics Overview:
 
+    source/intro
     source/grammar
     source/chains
     source/async
