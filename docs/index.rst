@@ -36,18 +36,24 @@ chainlet - blocks for processing chains
 
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Documentation Topics Overview:
+    :maxdepth: 2
+    :caption: Documentation Topics
 
-    source/intro
-    source/grammar
-    source/chains
-    source/async
+    source/tutorial_main
+    source/spec_main
     source/glossary
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Library Overview
+
     Basic Building Blocks <source/api/chainlet>
     Builtin and Protocol Wrappers <source/api/chainlet.protolink>
     Changelog <source/changelog>
     Module Index <source/api/modules>
+
+A Short Introduction to ``chainlet``
+------------------------------------
 
 The :py:mod:`chainlet` library lets you quickly build iterative processing sequences.
 At its heart, it is built for chaining generators/coroutines, but supports arbitrary objects.
@@ -81,19 +87,19 @@ Most functionality can be created from regular functions, generators and corouti
             new_value = yield(sum(buffer)/len(buffer))
             buffer.append(new_value)
 
-Quick Overview
---------------
+Quick Overview to Get You Started
+---------------------------------
 
-To just plug together existing chainlets, have a look at the :doc:`source/grammar`.
-To port existing imperative code, the :doc:`source/api/chainlet.protolink` provides simple helpers and equivalents of builtins.
+If you are new to ``chainlet``, check out the :doc:`tutorials and guides <source/tutorial_main>`.
+To just plug together existing chainlets, have a look at the :doc:`source/spec/grammar`.
+To port existing Python code, the :doc:`source/api/chainlet.protolink` provides simple helpers and equivalents of builtins.
 
-Writing new chainlets is easily done writing generators, coroutines and functions, decorated with :py:func:`chainlet.genlet` or :py:func:`chainlet.funclet`.
+Writing new chainlets is easily done with generators, coroutines and functions, promoted as :py:func:`~chainlet.genlet` or :py:func:`~chainlet.funclet`.
 A :py:func:`chainlet.genlet` is best when state must be preserved between calls.
 A :py:func:`chainlet.funclet` allows resuming even after exceptions.
 
 Advanced chainlets are best implemented as a subclass of :py:class:`chainlet.ChainLink`.
 Overwrite instantiation and :py:meth:`~chainlet.ChainLink.chainlet_send` to change their behaviour [#wrapperdetail]_.
-In order to change binding semantics, overwrite the ``__rshift__`` and ``__lshift__`` operators.
 
 Contributing and Feedback
 -------------------------

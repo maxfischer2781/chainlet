@@ -45,7 +45,7 @@ This implies that magenta is traversed before cyan.
 However, it does *not* imply an ordering between blue and magenta.
 
 Finally, synchronous traversal always respects the ordering of complete traversals.
-For every input, the *entire* :term:`chain`
+For every input, the *entire* :term:`chain` is traversed before the next input.
 
 .. [#setorder] In some cases, such as bundles from a :py:class:`set`, traversal order may be arbitrary.
                However, it is still fixed and stable.
