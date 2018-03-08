@@ -1,5 +1,7 @@
-Technical Aspects of ``chainlet``
-=================================
+Technical Aspects of chainlet
+=============================
+
+This section covers the technical specifications and background of :py:mod:`chainlet`.
 
 .. toctree::
     :maxdepth: 2

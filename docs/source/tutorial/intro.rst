@@ -7,8 +7,8 @@ This guide covers the two key concepts you need to learn:
 - Defining a ``chainlink`` to perform a single transformation
 - Chaining several ``chainlink``\ s to perform multiple transformations
 
-Defining a simple ``chainlink``
--------------------------------
+Defining a simple chainlink
+---------------------------
 
 A simple way to create a ``chainlink`` is to promote a function using :py:func:`~chainlet.funclet`.
 Using a :py:func:`~chainlet.funclet` is suitable whenever you can directly map input to output.
@@ -30,8 +30,8 @@ Simply decorate a regular function, which
 There is practically no restriction by :py:mod:`chainlet` on what the wrapped function can do.
 While it has its uses, it is generally good practice to avoid changing global state, though.
 
-Interlude: Using your first ``chainlink``
------------------------------------------
+Interlude: Using your first chainlink
+-------------------------------------
 
 By applying :py:func:`~chainlet.funclet`, we have created a new *type* of :py:term:`link`.
 To use it, you must instantiate it, which allows you to fill in all parameters.
@@ -62,8 +62,11 @@ This provides a lazily evaluated generator:
 
 .. code:: python
 
-    for result in chain.dispatch(range(5)):
-        print(result) # prints 0, 3, 6, 9, 12
+    >>> for result in chain.dispatch(range(3)):
+    ...     print(result)
+    0
+    3
+    6
 
 Dispatching is especially useful with :py:mod:`chainlet.concurrency`, which computes results in parallel.
 
@@ -126,14 +129,14 @@ The resulting chain will produce values by itself if you ``send(None)`` to it:
     >>> rand24.send(None)  # use generated starting value
     12.013380549968177
 
-On top of the explicit ``send(None)``, such a chain also supports regular iteration [#noneproduce]_.
+On top of the explicit ``send(None)``, such a chain also supports regular iteration.
 You can ``iter`` over its values, and get the ``next`` value:
 
 .. code:: python
 
     >>> next(rand24)
     3.6175271892905103
-    >>> for count, result in enumerate(rand24):
+    >>> for count, result in enumerate(rand24):  # implicitly uses iter(rand24)
     ...     print(count, ':', result)
     ...     if result > 12:
     ...        break
