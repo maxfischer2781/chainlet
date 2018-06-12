@@ -8,3 +8,4 @@ This section provides the main manual and tutorials of :py:mod:`chainlet`.
     :caption: Tutorials and Guides
 
     tutorial/intro
+    tutorial/generators
